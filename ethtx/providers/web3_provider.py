@@ -30,6 +30,7 @@ from ..models.semantics_model import FunctionSemantics
 from ..models.w3_model import W3Block, W3Transaction, W3Receipt, W3CallTree, W3Log
 from ..semantics.standards import erc20
 from ..utils.cache_tools import cache
+import time
 
 log = logging.getLogger(__name__)
 
@@ -145,6 +146,7 @@ class Web3Provider(NodeDataProvider):
                         connection,
                         self._latestBlockNum,
                     )
+                    time.sleep(0.1)
                     return w3
                 else:
                     log.warning("Connection failed to: %s", connection)
