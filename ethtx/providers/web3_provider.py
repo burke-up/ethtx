@@ -113,11 +113,11 @@ class Web3Provider(NodeDataProvider):
     def __init__(self, nodes: Dict[str, dict], default_chain=None):
         super().__init__(default_chain)
         self.nodes = nodes
-        self._lastestBlockNum = 0
+        self._latestBlockNum = 0
 
     @property
-    def  lastestBlockNum(self): 
-        return self._lastestBlockNum
+    def  latestBlockNum(self): 
+        return self._latestBlockNum
 
     def _get_node_connection(self, chain_id: Optional[str] = None) -> Web3:
         chain_id = chain_id or self.default_chain
@@ -139,11 +139,11 @@ class Web3Provider(NodeDataProvider):
 
             try:
                 if w3.isConnected():
-                    self._lastestBlockNum =  w3.eth.block_number
+                    self._latestBlockNum =  w3.eth.block_number
                     log.info(
                         "Connected to: %s with latest block %s.",
                         connection,
-                        self._lastestBlockNum,
+                        self._latestBlockNum,
                     )
                     return w3
                 else:
@@ -262,6 +262,7 @@ class Web3Provider(NodeDataProvider):
         response = chain.manager.request_blocking(
             "debug_traceTransaction", [tx_hash, {"tracer": tracer, "timeout": "60s"}]
         )
+        print("debug response=",response.__dict__)
 
         return self._create_call_from_debug_trace_tx(
             tx_hash, chain_id or self.default_chain, response
@@ -478,6 +479,7 @@ class Web3Provider(NodeDataProvider):
         w3transaction = self.get_transaction(tx_hash, chain_id)
         w3receipt = self.get_receipt(tx_hash, chain_id)
         w3calltree = self.get_calls(tx_hash, chain_id)
+        
 
         return Transaction.from_raw(
             w3transaction=w3transaction, w3receipt=w3receipt, w3calltree=w3calltree
@@ -496,6 +498,8 @@ class Web3Provider(NodeDataProvider):
             dct["to_address"] = dct.pop("to", None)
             dct["input"] = dct.pop("input", "0x")
             dct["output"] = dct.pop("output", "0x")
+            dct["pc"] = dct.pop("pc",None)
+            dct["revertPc"] = dct.pop("revertPc",None)
             calls = dct.pop("calls", [])
             return dct, calls
 

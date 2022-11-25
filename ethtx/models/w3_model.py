@@ -179,6 +179,8 @@ class W3CallTree(BaseModel):
     gasUsed: Optional[str]
     error: Optional[str]
     calls: list = []
+    pc: Optional[int]
+    revertPc: Optional[int]
 
     def to_object(self) -> Call:
         from_address = self.from_address
@@ -191,6 +193,8 @@ class W3CallTree(BaseModel):
         call_gas = int(self.gas, 16) if self.gas else None
         status = self.error is None
         error = self.error
+        pc = self.pc
+        revertPc = self.revertPc
 
         call = Call(
             call_type=call_type,
@@ -203,6 +207,8 @@ class W3CallTree(BaseModel):
             call_gas=call_gas,
             status=status,
             error=error,
+            pc=pc,
+            revertPc=revertPc,
         )
 
         for child_call in self.calls:

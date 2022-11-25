@@ -93,6 +93,8 @@ class Call(BaseModel):
     status: bool
     error: Optional[str]
     subcalls: List[Call] = Field(default_factory=list)
+    pc: Optional[int]
+    revertPc: Optional[int]
 
     # for future use
     call_id: Optional[str]

@@ -90,9 +90,9 @@ class DecoderService:
         if recreate_semantics:
             self.semantic_decoder.repository.delete_semantics(chain_id, used_semantics)
             return self.decode_transaction(chain_id, tx_hash, False)
-        lastBlockNum = self.web3provider.lastestBlockNum 
-
-        return semantically_decoded_tx,lastBlockNum
+      
+        semantically_decoded_tx.latestBlockNum = self.web3provider.latestBlockNum
+        return semantically_decoded_tx
 
     def get_proxies(
         self, delegations: Dict[str, List[str]], chain_id: str

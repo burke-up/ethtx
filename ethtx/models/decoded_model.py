@@ -102,6 +102,8 @@ class DecodedCall(BaseModel):
     indent: int
     subcalls: List[DecodedCall] = []
     function_guessed: bool = False
+    pc: Optional[int]
+    revertPc: Optional[int]
 
 
 class DecodedTransfer(BaseModel):
@@ -128,6 +130,7 @@ class DecodedTransaction(BaseModel):
     status: bool = False
     nonce: int
     input: Optional[str]
+    latestBlockNum: Optional[int]
 
 
 class Proxy(BaseModel):

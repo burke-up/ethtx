@@ -26,6 +26,8 @@
 
 	returnData: undefined,
 
+	lastThreeOps:   [],
+
 	// step is invoked for every opcode that the VM executes.
 	step: function(log, db) {
 		// Capture any errors immediately
@@ -33,6 +35,21 @@
 		if (error !== undefined) {
 			this.fault(log, db);
 			return;
+		}
+
+		if(this.callstack[0].pc == undefined){
+			var op = log.op.toString();	
+			if(this.lastThreeOps.length>=3){
+				if(op == "JUMPDEST"){
+					length = this.lastThreeOps.length;
+					if(this.lastThreeOps[length-1] == "JUMP"
+					 || (this.lastThreeOps[length-1] == "JUMPI" && this.lastThreeOps[length-3]=="EQ")){
+						this.callstack[0].pc  =  log.getPC();
+					}					
+				}	
+				this.lastThreeOps.shift();
+			}
+			this.lastThreeOps.push(op);
 		}
 		// We only care about system opcodes, faster if we pre-check once
 		var syscall = (log.op.toNumber() & 0xf0) == 0xf0;
@@ -56,7 +73,9 @@
 				input:   toHex(log.memory.slice(inOff, inEnd)),
 				gasIn:   log.getGas(),
 				gasCost: log.getCost(),
-				value:   '0x' + log.stack.peek(0).toString(16)
+				value:   '0x' + log.stack.peek(0).toString(16),
+				pc:      log.getPC(),
+				revertPc: 0,
 			};
 			this.callstack.push(call);
 			this.descended = true
@@ -74,7 +93,9 @@
 				to:      toHex(toAddress(log.stack.peek(0).toString(16))),
 				gasIn:   log.getGas(),
 				gasCost: log.getCost(),
-				value:   '0x' + db.getBalance(log.contract.getAddress()).toString(16)
+				value:   '0x' + db.getBalance(log.contract.getAddress()).toString(16),
+				pc:       log.getPC(),
+				revertPc: 0,
 			});
 			return
 		}
@@ -100,6 +121,8 @@
 				gasCost: log.getCost(),
 				outOff:  log.stack.peek(4 + off).valueOf(),
 				outLen:  log.stack.peek(5 + off).valueOf(),
+				pc:      log.getPC(),
+				revertPc: 0,
 			};
 			if (op != 'DELEGATECALL' && op != 'STATICCALL') {
 				call.value = '0x' + log.stack.peek(2).toString(16);
@@ -124,6 +147,7 @@
 		// If an existing call is returning, pop off the call stack
 		if (syscall && op == 'REVERT') {
 			this.callstack[this.callstack.length - 1].error = "execution reverted";
+			this.callstack[this.callstack.length - 1].revertPc = log.getPC();
 			return;
 		}
 		if (log.getDepth() == this.callstack.length - 1) {
@@ -213,6 +237,8 @@
 			input:   toHex(ctx.input),
 			output:  toHex(ctx.output),
 			time:    ctx.time,
+			pc:      0,
+			revertPc: 0,
 		};
 		if (this.callstack[0].calls !== undefined) {
 			result.calls = this.callstack[0].calls;
@@ -221,6 +247,12 @@
 			result.error = this.callstack[0].error;
 		} else if (ctx.error !== undefined) {
 			result.error = ctx.error;
+		}
+		if(this.callstack[0].pc !== undefined){
+            result.pc = this.callstack[0].pc;
+		}
+		if(this.callstack[0].revertPc !== undefined){
+            result.revertPc = this.callstack[0].revertPc;
 		}
 		if (result.error !== undefined && (result.error !== "execution reverted" || result.output ==="0x")) {
 			delete result.output;
@@ -244,6 +276,8 @@
 			error:   call.error,
 			time:    call.time,
 			calls:   call.calls,
+			pc:      call.pc,
+			revertPc: call.revertPc,
 		}
 		for (var key in sorted) {
 			if (sorted[key] === undefined) {

@@ -221,6 +221,8 @@ class ABICallsDecoder(ABISubmoduleAbc):
             status=status,
             indent=indent,
             function_guessed=guessed,
+            pc=call.pc,
+            revertPc=call.revertPc,
         )
 
     def _decode_nested_calls(
