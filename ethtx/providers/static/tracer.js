@@ -50,6 +50,16 @@
 				this.lastThreeOps.shift();
 			}
 			this.lastThreeOps.push(op);
+		}else{
+			var op = log.op.toString();	
+			if(op == "JUMP"){
+				var left = this.callstack.length;
+				if(this.callstack[left-1].jumps == undefined){
+					this.callstack[left-1].jumps = [];
+				}
+				this.callstack[left-1].jumps.push(log.getPC());
+			}
+
 		}
 		// We only care about system opcodes, faster if we pre-check once
 		var syscall = (log.op.toNumber() & 0xf0) == 0xf0;
@@ -76,6 +86,7 @@
 				value:   '0x' + log.stack.peek(0).toString(16),
 				pc:      log.getPC(),
 				revertPc: 0,
+				jumps: [],
 			};
 			this.callstack.push(call);
 			this.descended = true
@@ -96,6 +107,7 @@
 				value:   '0x' + db.getBalance(log.contract.getAddress()).toString(16),
 				pc:       log.getPC(),
 				revertPc: 0,
+				jumps: [],
 			});
 			return
 		}
@@ -123,6 +135,7 @@
 				outLen:  log.stack.peek(5 + off).valueOf(),
 				pc:      log.getPC(),
 				revertPc: 0,
+				jumps: [],
 			};
 			if (op != 'DELEGATECALL' && op != 'STATICCALL') {
 				call.value = '0x' + log.stack.peek(2).toString(16);
@@ -239,6 +252,7 @@
 			time:    ctx.time,
 			pc:      0,
 			revertPc: 0,
+			jumps: [],
 		};
 		if (this.callstack[0].calls !== undefined) {
 			result.calls = this.callstack[0].calls;
@@ -249,13 +263,16 @@
 			result.error = ctx.error;
 		}
 		if(this.callstack[0].pc !== undefined){
-            result.pc = this.callstack[0].pc;
+                   result.pc = this.callstack[0].pc;
 		}
 		if(this.callstack[0].revertPc !== undefined){
-            result.revertPc = this.callstack[0].revertPc;
+                    result.revertPc = this.callstack[0].revertPc;
 		}
 		if (result.error !== undefined && (result.error !== "execution reverted" || result.output ==="0x")) {
 			delete result.output;
+		}
+		if(this.callstack[0].jumps !== undefined){
+            result.jumps = this.callstack[0].jumps;
 		}
 		return this.finalize(result);
 	},
@@ -278,6 +295,7 @@
 			calls:   call.calls,
 			pc:      call.pc,
 			revertPc: call.revertPc,
+			jumps: call.jumps,
 		}
 		for (var key in sorted) {
 			if (sorted[key] === undefined) {

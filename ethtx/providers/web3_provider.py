@@ -502,6 +502,7 @@ class Web3Provider(NodeDataProvider):
             dct["output"] = dct.pop("output", "0x")
             dct["pc"] = dct.pop("pc",None)
             dct["revertPc"] = dct.pop("revertPc",None)
+            dct["jumps"] = dct.pop("jumps",None)
             calls = dct.pop("calls", [])
             return dct, calls
 

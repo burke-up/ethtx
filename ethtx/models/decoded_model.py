@@ -39,7 +39,7 @@ class DecodedTransactionMetadata(BaseModel):
     block_number: Optional[int]
     block_hash: Optional[str]
     timestamp: Optional[datetime]
-    gas_price: Optional[int]
+    gas_price: Optional[float]
     from_address: Optional[str]
     to_address: Optional[str]
     sender: Optional[AddressInfo]
@@ -104,6 +104,7 @@ class DecodedCall(BaseModel):
     function_guessed: bool = False
     pc: Optional[int]
     revertPc: Optional[int]
+    jumps: Optional[List[int]]
 
 
 class DecodedTransfer(BaseModel):

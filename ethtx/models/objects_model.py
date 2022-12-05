@@ -45,7 +45,7 @@ class BlockMetadata(BaseModel):
 class TransactionMetadata(BaseModel):
     tx_hash: str
     block_number: int
-    gas_price: int
+    gas_price: float 
     from_address: str
     to_address: str
     tx_index: int
@@ -95,6 +95,7 @@ class Call(BaseModel):
     subcalls: List[Call] = Field(default_factory=list)
     pc: Optional[int]
     revertPc: Optional[int]
+    jumps: Optional[List[int]]
 
     # for future use
     call_id: Optional[str]

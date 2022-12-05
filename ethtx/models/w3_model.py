@@ -181,6 +181,7 @@ class W3CallTree(BaseModel):
     calls: list = []
     pc: Optional[int]
     revertPc: Optional[int]
+    jumps: Optional[List[int]]
 
     def to_object(self) -> Call:
         from_address = self.from_address
@@ -195,6 +196,7 @@ class W3CallTree(BaseModel):
         error = self.error
         pc = self.pc
         revertPc = self.revertPc
+        jumps = self.jumps
 
         call = Call(
             call_type=call_type,
@@ -209,6 +211,7 @@ class W3CallTree(BaseModel):
             error=error,
             pc=pc,
             revertPc=revertPc,
+            jumps = jumps,
         )
 
         for child_call in self.calls:
