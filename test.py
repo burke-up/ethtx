@@ -137,7 +137,7 @@ def getFileNameAndNo(contract_address,pc):
     return [code, linecode, filename,shortfilename,lineno]
 
 ethtx_config = EthTxConfig(
-    mongo_connection_string="mongodb://192.168.243.128:27017/ethtx",  ##MongoDB connection string,
+    mongo_connection_string="mongodb://127.0.0.1:27017/ethtx",  ##MongoDB connection string,
     etherscan_api_key="9MB9GKUGPQIFN9V4UW73NNEI2D3HKSQYCG",  ##Etherscan API key,
     web3nodes={
         "mainnet": {
@@ -149,22 +149,22 @@ ethtx_config = EthTxConfig(
     etherscan_urls={"mainnet": "https://api.etherscan.io/api", },
 )
 
+txhash = "0x07b5e887131fc6d7ba126c7d433fee5b74e9e194a73270a676bbc33bb4220335"
 ethtx = EthTx.initialize(ethtx_config)
-decoded_transaction = ethtx.decoders.decode_transaction(
-    '0x58c043143182c9912af4d433322d3e84f2043e9fe9db5f9d7c598440f82f59f0')
+decoded_transaction = ethtx.decoders.decode_transaction(txhash)
 calls  = decoded_transaction.calls
 print(decoded_transaction)
 
-print("showCallsStart:")
-def printCall(call):
-    print(call.pc,call.call_type, call.revertPc,call.from_address, call.to_address)
-    filenoinfo = getFileNameAndNo(call.to_address,call.pc)
-    print(filenoinfo)
-    if not call.subcalls or len(call.subcalls) == 0:
-        if call.revertPc != 0:
-            filenoinfo = getFileNameAndNo(call.to_address,call.revertPc)
-            print(filenoinfo)
-        return 
-    printCall(call.subcalls[len(call.subcalls)-1])
-printCall(calls)
-print("showCallsEnd:")
+#print("showCallsStart:")
+#def printCall(call):
+#    print(call.pc,call.call_type, call.revertPc,call.from_address, call.to_address)
+#    filenoinfo = getFileNameAndNo(call.to_address,call.pc)
+#    print(filenoinfo)
+#    if not call.subcalls or len(call.subcalls) == 0:
+#        if call.revertPc != 0:
+#            filenoinfo = getFileNameAndNo(call.to_address,call.revertPc)
+#            print(filenoinfo)
+#        return 
+#    printCall(call.subcalls[len(call.subcalls)-1])
+#printCall(calls)
+#print("showCallsEnd:")

@@ -82,6 +82,26 @@ class DecodedEvent(BaseModel):
     parameters: List[Argument]
     event_guessed: bool = False
 
+class StackTraceItem(BaseModel):
+    filename: Optional[str]
+    long_filename: Optional[str]
+    lineno: Optional[int]
+    code: Optional[str]
+    linecode: Optional[str]
+    op: str
+    address: str
+    error: Optional[str]
+    blockcode: Optional[str]
+    startPos: Optional[int]
+    endPos: Optional[int]
+    fileno: Optional[int]
+
+
+class DecodedTransactionWithStackTrace(BaseModel):
+    stackTrace: List[StackTraceItem] = []
+    def init(self, decode_traction:DecodedTransaction):
+        self.__dict__.update(decode_traction.__dict__)
+
 
 class DecodedCall(BaseModel):
     chain_id: str
@@ -105,6 +125,7 @@ class DecodedCall(BaseModel):
     pc: Optional[int]
     revertPc: Optional[int]
     jumps: Optional[List[int]]
+    stackTraceItem: Optional[StackTraceItem]
 
 
 class DecodedTransfer(BaseModel):
