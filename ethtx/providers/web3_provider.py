@@ -215,6 +215,13 @@ class Web3Provider(NodeDataProvider):
         return transaction
 
     @cache
+    def get_statediff(self, tx_hash: str, chain_id: Optional[str] = None) -> W3Receipt:
+        chain = self._get_node_connection(chain_id)
+        return None
+     
+   
+
+    @cache
     def get_receipt(self, tx_hash: str, chain_id: Optional[str] = None) -> W3Receipt:
         chain = self._get_node_connection(chain_id)
         raw_receipt: TxReceipt = chain.eth.get_transaction_receipt(tx_hash)
@@ -481,6 +488,7 @@ class Web3Provider(NodeDataProvider):
         w3transaction = self.get_transaction(tx_hash, chain_id)
         w3receipt = self.get_receipt(tx_hash, chain_id)
         w3calltree = self.get_calls(tx_hash, chain_id)
+        w3statediff = self.get_statediff(tx_hash, chain_id)
         
 
         return Transaction.from_raw(

@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Dict
 from decimal import Decimal, getcontext
 
 from pydantic import validator
@@ -153,6 +153,9 @@ class DecodedTransaction(BaseModel):
     nonce: int
     input: Optional[str]
     latestBlockNum: Optional[int]
+    state_diff: Optional[List]
+    nonce_diff: Optional[List]
+    balance_diff: Optional[List]
 
 
 class Proxy(BaseModel):
