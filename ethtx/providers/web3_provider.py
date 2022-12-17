@@ -27,7 +27,7 @@ from .node import NodeConnectionPool
 from ..exceptions import NodeConnectionException, ProcessingException
 from ..models.objects_model import Transaction, BlockMetadata, TransactionMetadata, Call
 from ..models.semantics_model import FunctionSemantics
-from ..models.w3_model import W3Block, W3Transaction, W3Receipt, W3CallTree, W3Log
+from ..models.w3_model import W3Block, W3Transaction, W3Receipt, W3CallTree, W3Log,W3StateDiff,W3StateDiffOne
 from ..semantics.standards import erc20
 from ..utils.cache_tools import cache
 import time
@@ -215,11 +215,17 @@ class Web3Provider(NodeDataProvider):
         return transaction
 
     @cache
-    def get_statediff(self, tx_hash: str, chain_id: Optional[str] = None) -> W3Receipt:
+    def get_statediff(self, tx_hash: str, chain_id: Optional[str] = None) -> List[W3StateDiff]:
         chain = self._get_node_connection(chain_id)
-        return None
+        raw_statediff = chain.manager.request_blocking("trace_replayTransaction",[tx_hash,["stateDiff"]])
+        return self._create_statediff_from_replay(tx_hash, chain_id or self.default_chain ,raw_statediff)
      
-   
+    def _create_statediff_from_replay(
+        self, tx_hash: str, chain_id: str, input_rpc: AttributeDict
+    ) -> List[W3StateDiff]:   
+        obj = input_rpc.__dict__
+
+        return 
 
     @cache
     def get_receipt(self, tx_hash: str, chain_id: Optional[str] = None) -> W3Receipt:
@@ -497,6 +503,7 @@ class Web3Provider(NodeDataProvider):
 
     def _get_custom_calls_tracer(self):
         return open(os.path.join(os.path.dirname(__file__), "static/tracer.js")).read()
+
 
     def _create_call_from_debug_trace_tx(
         self, tx_hash: str, chain_id: str, input_rpc: AttributeDict

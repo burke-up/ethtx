@@ -218,3 +218,13 @@ class W3CallTree(BaseModel):
             call.subcalls.append(child_call.to_object())
 
         return call
+
+def W3StateDiffOne(BaseModel):
+    original: str
+    dirty: str
+
+def W3StateDiff(BaseModel):
+    addr: str
+    balance: W3StateDiffOne
+    nonce: W3StateDiffOne
+    storage: List[W3StateDiffOne]
