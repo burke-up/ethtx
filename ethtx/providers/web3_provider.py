@@ -225,7 +225,7 @@ class Web3Provider(NodeDataProvider):
     ) -> List[W3StateDiff]:   
         obj = input_rpc.__dict__
 
-        def parse_to_w3statediff(item: str|AttributeDict)->str|Dict(str,W3StateDiffOne):
+        def parse_to_w3statediff(item: str|AttributeDict)-> str | Dict[str,W3StateDiffOne]:
             if isinstance(item, str):
                 return item
             item_dict = item.__dict__
@@ -240,7 +240,10 @@ class Web3Provider(NodeDataProvider):
                 stateDiff = stateDiff.__dict__
             balance = parse_to_w3statediff(stateDiff["balance"])
             nonce = parse_to_w3statediff(stateDiff["nonce"])
-            storage = parse_to_w3statediff(stateDiff["storage"])
+            storage = {}
+            for storage_key, storage_value in stateDiff["storage"].items():
+                storage_item = parse_to_w3statediff(storage_value)
+                storage[storage_key] = storage_item
             diff = W3StateDiff(addr=contract_address, balance=balance, nonce=nonce, storage=storage)
             stateDiffs.append(diff)
 

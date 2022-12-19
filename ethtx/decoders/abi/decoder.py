@@ -258,6 +258,32 @@ class ABIDecoder(IABIDecoder):
                 transaction.metadata
             )
             raise e
+
+        try:
+            diffresults = self.decode_diffs(
+                diffs = transaction.statediff,
+                shainfo = transaction.root_call.shainfo, 
+            )
+            balance_diffs = []
+            nonce_diffs = []
+            storage_diffs = []
+            for diff in diffresults:
+                if len(diff.balance_diff) > 0:
+                    balance_diffs.append(diff.balance_diff)
+                if len(diff.nonce_diff) > 0:
+                    nonce_diffs.append(diff.nonce_diff)
+                if len(diff.storage_diff) > 0:
+                    storage_diffs.append(diff.storage_diff)
+            full_decoded_transaction.balance_diff = balance_diffs
+            full_decoded_transaction.nonce_diff = nonce_diffs
+            full_decoded_transaction.state_diff = storage_diffs 
+        except Exception as e:
+            log.exception(
+                "ABI decoding of diff for %s / %s failed.",
+                transaction.metadata.tx_hash,
+                chain_id,
+            )
+            raise e
         # remove chained delegatecalls from the tree
         prune_delegates(full_decoded_transaction.calls)
 

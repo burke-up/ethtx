@@ -17,12 +17,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pydantic import Field
 
 from ethtx.models.base_model import BaseModel
-from .w3_model import W3StateDiff
 
 
 class BlockMetadata(BaseModel):
@@ -68,6 +67,24 @@ class TransactionMetadata(BaseModel):
     def from_raw(w3transaction, w3receipt) -> TransactionMetadata:
         return w3transaction.to_object(w3receipt)
 
+class StateDiffOne(BaseModel):
+    original: str
+    dirty: str
+
+    @staticmethod
+    def from_raw(w3statediffone)->StateDiffOne:
+        return w3statediffone.to_object()
+
+class StateDiff(BaseModel):
+    addr: str
+    balance: str| Dict[str,StateDiffOne]
+    nonce: str | Dict[str,StateDiffOne]
+    storage: Dict[str,Dict[str,StateDiffOne]]
+
+    @staticmethod
+    def from_raw(w3statediff) -> StateDiff:
+        return w3statediff.to_object()
+StateDiff.update_forward_refs()
 
 class Event(BaseModel):
     contract: Optional[str]
@@ -97,6 +114,7 @@ class Call(BaseModel):
     pc: Optional[int]
     revertPc: Optional[int]
     jumps: Optional[List[int]]
+    shainfo: Optional[Dict]
 
     # for future use
     call_id: Optional[str]
@@ -119,16 +137,17 @@ class Transaction(BaseModel):
     metadata: TransactionMetadata
     root_call: Call
     events: List[Event]
-    w3statediff: List[W3StateDiff]
+    statediff: List[StateDiff]
 
     @staticmethod
     def from_raw(w3transaction, w3receipt, w3calltree, w3statediff) -> Transaction:
         data = w3transaction.to_object(w3receipt)
         events = [w3log.to_object() for w3log in w3receipt.logs]
         root_call = w3calltree.to_object()
-        w3statediff = w3statediff
-        return Transaction(metadata=data, root_call=root_call, events=events, w3statediff = w3statediff)
+        statediff = w3statediff
+        return Transaction(metadata=data, root_call=root_call, events=events, statediff=statediff)
 
+Transaction.update_forward_refs()
 
 class Block(BaseModel):
     chain_id: str

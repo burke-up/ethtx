@@ -24,7 +24,6 @@ from ..models.decoded_model import DecodedTransaction, Proxy
 from ..models.objects_model import Block, Call
 from ..providers.web3_provider import NodeDataProvider
 from ..semantics.standards.eip1969 import is_eip1969_proxy, is_eip1969_beacon_proxy
-from .fakedata.state_diff import  addStateDiffData
 
 log = logging.getLogger(__name__)
 
@@ -94,7 +93,6 @@ class DecoderService:
             return self.decode_transaction(chain_id, tx_hash, False)
       
         semantically_decoded_tx.latestBlockNum = self.web3provider.latestBlockNum
-        addStateDiffData(semantically_decoded_tx)
         return semantically_decoded_tx
        
 

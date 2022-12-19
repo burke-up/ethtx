@@ -21,7 +21,7 @@ from typing import Optional, List,Dict
 
 from ethtx.models._types import THexBytes
 from ethtx.models.base_model import BaseModel
-from ethtx.models.objects_model import BlockMetadata, TransactionMetadata, Event, Call
+from ethtx.models.objects_model import BlockMetadata, TransactionMetadata, Event, Call, StateDiffOne, StateDiff
 
 
 class W3Block(BaseModel):
@@ -182,7 +182,7 @@ class W3CallTree(BaseModel):
     pc: Optional[int]
     revertPc: Optional[int]
     jumps: Optional[List[int]]
-    shainfo: Dict = {}
+    shainfo: Optional[dict]
 
     def to_object(self) -> Call:
         from_address = self.from_address
@@ -222,12 +222,22 @@ class W3CallTree(BaseModel):
 
         return call
 
-def W3StateDiffOne(BaseModel):
+class W3StateDiffOne(BaseModel):
     original: str
     dirty: str
+    def to_object(self)->StateDiffOne:
+        return StateDiffOne(original=original, dirty=dirty)
+         
 
-def W3StateDiff(BaseModel):
+class W3StateDiff(BaseModel):
     addr: str
-    balance: str| Dict(str,W3StateDiffOne)
-    nonce: str | Dict(str,W3StateDiffOne)
-    storage: Dict(str,Dict(str,W3StateDiffOne))
+    balance: str| Dict[str,W3StateDiffOne]
+    nonce: str | Dict[str,W3StateDiffOne]
+    storage: Dict[str,Dict[str,W3StateDiffOne]]
+    def to_object(self) -> StateDiff:
+        return StateDiff(
+            addr=addr,
+            balance=balance.to_object(),
+            nonce=nonce.to_object(),
+            storage=storage.to_object(),
+        )
