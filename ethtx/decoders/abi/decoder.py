@@ -16,6 +16,7 @@
 
 import logging
 from typing import Optional, Dict, List
+from ethtx.models.w3_model import W3StateDiff
 
 from ethtx.models.decoded_model import (
     DecodedTransaction,
@@ -38,6 +39,7 @@ from .balances import ABIBalancesDecoder
 from .calls import ABICallsDecoder
 from .events import ABIEventsDecoder
 from .transfers import ABITransfersDecoder
+from .diffs import ABIDiffsDecoder
 
 log = logging.getLogger(__name__)
 
@@ -101,6 +103,19 @@ class ABIDecoder(IABIDecoder):
         return ABICallsDecoder(
             repository=self._repository, chain_id=self._default_chain
         ).decode(call=root_call, block=block, transaction=transaction, proxies=proxies)
+
+    def decode_diffs(
+        self,
+        diffs: List[W3StateDiff],
+        shainfo: Dict,
+        chain_id: Optional[str] = None,
+    ):
+        return ABIDiffsDecoder(
+            repository=self._repository, chain_id=chain_id or self._default_chain
+            ).decode(
+                diffs=diffs,
+                shainfo=shainfo,
+            )
 
     def decode_events(
         self,

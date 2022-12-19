@@ -22,6 +22,7 @@ from typing import List, Optional
 from pydantic import Field
 
 from ethtx.models.base_model import BaseModel
+from .w3_model import W3StateDiff
 
 
 class BlockMetadata(BaseModel):
@@ -118,13 +119,15 @@ class Transaction(BaseModel):
     metadata: TransactionMetadata
     root_call: Call
     events: List[Event]
+    w3statediff: List[W3StateDiff]
 
     @staticmethod
-    def from_raw(w3transaction, w3receipt, w3calltree) -> Transaction:
+    def from_raw(w3transaction, w3receipt, w3calltree, w3statediff) -> Transaction:
         data = w3transaction.to_object(w3receipt)
         events = [w3log.to_object() for w3log in w3receipt.logs]
         root_call = w3calltree.to_object()
-        return Transaction(metadata=data, root_call=root_call, events=events)
+        w3statediff = w3statediff
+        return Transaction(metadata=data, root_call=root_call, events=events, w3statediff = w3statediff)
 
 
 class Block(BaseModel):

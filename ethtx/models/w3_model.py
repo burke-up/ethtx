@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List,Dict
 
 from ethtx.models._types import THexBytes
 from ethtx.models.base_model import BaseModel
@@ -182,6 +182,7 @@ class W3CallTree(BaseModel):
     pc: Optional[int]
     revertPc: Optional[int]
     jumps: Optional[List[int]]
+    shainfo: Dict = {}
 
     def to_object(self) -> Call:
         from_address = self.from_address
@@ -197,6 +198,7 @@ class W3CallTree(BaseModel):
         pc = self.pc
         revertPc = self.revertPc
         jumps = self.jumps
+        shainfo = self.shainfo
 
         call = Call(
             call_type=call_type,
@@ -212,6 +214,7 @@ class W3CallTree(BaseModel):
             pc=pc,
             revertPc=revertPc,
             jumps = jumps,
+            shainfo = shainfo,
         )
 
         for child_call in self.calls:
@@ -225,6 +228,6 @@ def W3StateDiffOne(BaseModel):
 
 def W3StateDiff(BaseModel):
     addr: str
-    balance: W3StateDiffOne
-    nonce: W3StateDiffOne
-    storage: List[W3StateDiffOne]
+    balance: str| Dict(str,W3StateDiffOne)
+    nonce: str | Dict(str,W3StateDiffOne)
+    storage: Dict(str,Dict(str,W3StateDiffOne))

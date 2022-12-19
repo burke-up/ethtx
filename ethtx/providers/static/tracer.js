@@ -28,6 +28,11 @@
 
 	lastThreeOps:   [],
 
+	afterSHA: false,
+	lastKey: "",
+	shainfo : {},
+	
+
 	// step is invoked for every opcode that the VM executes.
 	step: function(log, db) {
 		// Capture any errors immediately
@@ -36,9 +41,22 @@
 			this.fault(log, db);
 			return;
 		}
+		var op = log.op.toString();	
+		if(this.afterSHA){
+			var key = log.stack.peek(0).toString(16);
+			this.shainfo[key] = this.lastKey;
+		}
+		this.afterSHA  = false;		
+		if(op == "SHA3"){
+			var outOff = log.stack.peek(0).valueOf();
+			var outEnd = outOff + log.stack.peek(1).valueOf();
+			var param = toHex(log.memory.slice(outOff, outEnd));
+			this.lastKey = param;
+			this.afterSHA  =true;
+		}
+		
 
 		if(this.callstack[0].pc == undefined){
-			var op = log.op.toString();	
 			if(this.lastThreeOps.length>=3){
 				if(op == "JUMPDEST"){
 					length = this.lastThreeOps.length;
@@ -51,16 +69,15 @@
 			}
 			this.lastThreeOps.push(op);
 		}else{
-			var op = log.op.toString();	
-			if(op == "JUMP"){
-				var left = this.callstack.length;
+			var left = this.callstack.length;
+			if(op == "JUMP"){				
 				if(this.callstack[left-1].jumps == undefined){
 					this.callstack[left-1].jumps = [];
 				}
 				this.callstack[left-1].jumps.push(log.getPC());
 			}
-
 		}
+
 		// We only care about system opcodes, faster if we pre-check once
 		var syscall = (log.op.toNumber() & 0xf0) == 0xf0;
 		if (syscall) {
@@ -240,6 +257,7 @@
 	// result is invoked when all the opcodes have been iterated over and returns
 	// the final result of the tracing.
 	result: function(ctx, db) {
+
 		var result = {
 			type:    ctx.type,
 			from:    toHex(ctx.from),
@@ -253,6 +271,7 @@
 			pc:      0,
 			revertPc: 0,
 			jumps: [],
+			shainfo: this.shainfo,
 		};
 		if (this.callstack[0].calls !== undefined) {
 			result.calls = this.callstack[0].calls;
@@ -274,6 +293,7 @@
 		if(this.callstack[0].jumps !== undefined){
             result.jumps = this.callstack[0].jumps;
 		}
+		
 		return this.finalize(result);
 	},
 
@@ -296,6 +316,8 @@
 			pc:      call.pc,
 			revertPc: call.revertPc,
 			jumps: call.jumps,
+			shainfo: call.shainfo,
+
 		}
 		for (var key in sorted) {
 			if (sorted[key] === undefined) {

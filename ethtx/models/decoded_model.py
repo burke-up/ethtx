@@ -69,6 +69,10 @@ class Argument(BaseModel):
             return Decimal(v)
         return v
 
+class  DecodedDiff(BaseModel):
+    balance_diff: Dict
+    nonce_diff: Dict
+    storage_diff: Dict
 
 class DecodedEvent(BaseModel):
     chain_id: str

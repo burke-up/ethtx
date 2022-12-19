@@ -225,7 +225,26 @@ class Web3Provider(NodeDataProvider):
     ) -> List[W3StateDiff]:   
         obj = input_rpc.__dict__
 
-        return 
+        def parse_to_w3statediff(item: str|AttributeDict)->str|Dict(str,W3StateDiffOne):
+            if isinstance(item, str):
+                return item
+            item_dict = item.__dict__
+            result: Dict(str,W3StateDiffOne) = {}
+            for k,v in item_dict.items():
+                result[k] = W3StateDiffOne(original=v["from"], dirty=v["to"])
+            return result
+
+        stateDiffs:List[W3StateDiff] = []
+        for contract_address, stateDiff in obj["stateDiff"].items():
+            if not isinstance(stateDiff, dict):
+                stateDiff = stateDiff.__dict__
+            balance = parse_to_w3statediff(stateDiff["balance"])
+            nonce = parse_to_w3statediff(stateDiff["nonce"])
+            storage = parse_to_w3statediff(stateDiff["storage"])
+            diff = W3StateDiff(addr=contract_address, balance=balance, nonce=nonce, storage=storage)
+            stateDiffs.append(diff)
+
+        return stateDiffs
 
     @cache
     def get_receipt(self, tx_hash: str, chain_id: Optional[str] = None) -> W3Receipt:
@@ -277,7 +296,7 @@ class Web3Provider(NodeDataProvider):
         response = chain.manager.request_blocking(
             "debug_traceTransaction", [tx_hash, {"tracer": tracer, "timeout": "60s"}]
         )
-        print("debug response=",response.__dict__)
+
 
         return self._create_call_from_debug_trace_tx(
             tx_hash, chain_id or self.default_chain, response
@@ -498,7 +517,7 @@ class Web3Provider(NodeDataProvider):
         
 
         return Transaction.from_raw(
-            w3transaction=w3transaction, w3receipt=w3receipt, w3calltree=w3calltree
+            w3transaction=w3transaction, w3receipt=w3receipt, w3calltree=w3calltree,w3statediff=w3statediff
         )
 
     def _get_custom_calls_tracer(self):
@@ -518,6 +537,7 @@ class Web3Provider(NodeDataProvider):
             dct["pc"] = dct.pop("pc",None)
             dct["revertPc"] = dct.pop("revertPc",None)
             dct["jumps"] = dct.pop("jumps",None)
+            dct["shainfo"] = dct.pop("shainfo",None)
             calls = dct.pop("calls", [])
             return dct, calls
 
