@@ -14,29 +14,37 @@ class ABIDiffsDecoder(ABISubmoduleAbc):
 
     def decode(
         self,
+        block: BlockMetadata,
         diffs: Union[StateDiff, List[StateDiff]],
         chain_id: Optional[str] = None,
         shainfo: Dict = None,
+        proxies: Dict[str, Proxy] = None,
     ) -> Union[DecodedDiff, List[DecodedDiff]]:
         """Return list of decoded events."""
         if isinstance(diffs, list):
             return (
                 [
-                    self.decode_diff(diff, chain_id, shainfo)
+                    self.decode_diff(block, diff, chain_id, shainfo,proxies)
                     for diff in diffs
                 ]
                 if diffs
                 else []
             )
 
-        return self.decode_diff(diffs, block, transaction, proxies, chain_id)
+        return self.decode_diff(block, diffs, proxies, chain_id,shainfo,proxies)
 
     def decode_diff(
         self,
+        block: BlockMetadata,
         diff: StateDiff,
         chain_id: str = None,
-        shainfo: Dict = None
+        shainfo: Dict = None,
+        proxies: Dict[str, Proxy] = None,
     ) -> DecodedDiff:
+ 
+        addr_name = self._repository.get_address_label(
+            chain_id, diff.addr, proxies
+        )
         def handle(addr, item):
             if not isinstance(item, dict) or '*' not in item:
                 return {}
@@ -51,9 +59,11 @@ class ABIDiffsDecoder(ABISubmoduleAbc):
                     continue
                 #TODO handle v["*"]
             return {}
-            
-        balances = handle(diff.addr, diff.balance)
-        nonces = handle(diff.addr, diff.nonce)
+        addr = AddressInfo(address=diff.addr, name=addr_name)    
+        balances = handle(addr, diff.balance)
+        if len(balances) > 0:
+            balances["is_miner"] = diff.addr == block.miner
+        nonces = handle(addr, diff.nonce)
         storages = handleStorage(diff.storage)
         return DecodedDiff(
             balance_diff=balances,

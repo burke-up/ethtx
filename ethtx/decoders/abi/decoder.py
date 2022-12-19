@@ -261,6 +261,9 @@ class ABIDecoder(IABIDecoder):
 
         try:
             diffresults = self.decode_diffs(
+                block=block,
+                chain_id=chain_id,
+                proxies=proxies,
                 diffs = transaction.statediff,
                 shainfo = transaction.root_call.shainfo, 
             )
