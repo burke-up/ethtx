@@ -16,7 +16,6 @@ class ABIDiffsDecoder(ABISubmoduleAbc):
         self,
         block: BlockMetadata,
         diffs: Union[StateDiff, List[StateDiff]],
-        chain_id: Optional[str] = None,
         shainfo: Dict = None,
         proxies: Dict[str, Proxy] = None,
     ) -> Union[DecodedDiff, List[DecodedDiff]]:
@@ -24,26 +23,25 @@ class ABIDiffsDecoder(ABISubmoduleAbc):
         if isinstance(diffs, list):
             return (
                 [
-                    self.decode_diff(block, diff, chain_id, shainfo,proxies)
+                    self.decode_diff(block, diff, shainfo,proxies)
                     for diff in diffs
                 ]
                 if diffs
                 else []
             )
 
-        return self.decode_diff(block, diffs, proxies, chain_id,shainfo,proxies)
+        return self.decode_diff(block, diffs, shainfo,proxies)
 
     def decode_diff(
         self,
         block: BlockMetadata,
         diff: StateDiff,
-        chain_id: str = None,
         shainfo: Dict = None,
         proxies: Dict[str, Proxy] = None,
     ) -> DecodedDiff:
  
         addr_name = self._repository.get_address_label(
-            chain_id, diff.addr, proxies
+            self._default_chain, diff.addr, proxies
         )
         def handle(addr, item):
             if not isinstance(item, dict) or '*' not in item:

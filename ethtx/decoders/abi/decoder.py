@@ -106,15 +106,19 @@ class ABIDecoder(IABIDecoder):
 
     def decode_diffs(
         self,
+        block: BlockMetadata,
         diffs: List[W3StateDiff],
         shainfo: Dict,
         chain_id: Optional[str] = None,
+	proxies: Dict[str, Proxy] = None,
     ):
         return ABIDiffsDecoder(
             repository=self._repository, chain_id=chain_id or self._default_chain
             ).decode(
                 diffs=diffs,
+                block=block,
                 shainfo=shainfo,
+                proxies=proxies,
             )
 
     def decode_events(
@@ -176,6 +180,7 @@ class ABIDecoder(IABIDecoder):
         chain_id: str,
         proxies: Optional[Dict[str, Proxy]] = None,
     ) -> DecodedTransaction:
+        print("thechain_id:", chain_id)
 
         full_decoded_transaction = DecodedTransaction(
             block_metadata=block,
@@ -259,6 +264,8 @@ class ABIDecoder(IABIDecoder):
             )
             raise e
 
+
+        print("thechain_id1:", chain_id)
         try:
             diffresults = self.decode_diffs(
                 block=block,
