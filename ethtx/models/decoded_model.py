@@ -72,7 +72,7 @@ class Argument(BaseModel):
 class  DecodedDiff(BaseModel):
     balance_diff: Dict
     nonce_diff: Dict
-    storage_diff: Dict
+    storage_diff: List
 
 class DecodedEvent(BaseModel):
     chain_id: str

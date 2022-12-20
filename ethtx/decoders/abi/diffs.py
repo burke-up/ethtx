@@ -7,6 +7,7 @@ from ethtx.semantics.standards.erc721 import ERC721_EVENTS
 from .abc import ABISubmoduleAbc
 from .helpers.utils import decode_event_abi_name_with_external_source
 from ..decoders.parameters import decode_event_parameters
+from ethtx.contracts.contract import Contract
 
 
 class ABIDiffsDecoder(ABISubmoduleAbc):
@@ -49,20 +50,19 @@ class ABIDiffsDecoder(ABISubmoduleAbc):
             realdiff = item["*"]
             return {"address":addr,"original":realdiff.original, "dirty":realdiff.dirty,"is_miner": False}
 
-        def handleStorage(storage):
+        def handleStorage(addr, storage, shainfo):
             if not isinstance(storage, dict):
-                return {}
-            for k,v in storage.items():
-                if "*" not in v:
-                    continue
-                #TODO handle v["*"]
-            return {}
+                return []
+            c = Contract(addr.address)
+            return c.decodeStorageDiff(storage, shainfo)
+
+
         addr = AddressInfo(address=diff.addr, name=addr_name)    
         balances = handle(addr, diff.balance)
         if len(balances) > 0:
             balances["is_miner"] = diff.addr == block.miner
         nonces = handle(addr, diff.nonce)
-        storages = handleStorage(diff.storage)
+        storages = handleStorage(addr, diff.storage, shainfo)
         return DecodedDiff(
             balance_diff=balances,
             nonce_diff=nonces,

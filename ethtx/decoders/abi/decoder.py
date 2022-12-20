@@ -180,7 +180,7 @@ class ABIDecoder(IABIDecoder):
         chain_id: str,
         proxies: Optional[Dict[str, Proxy]] = None,
     ) -> DecodedTransaction:
-        print("thechain_id:", chain_id)
+
 
         full_decoded_transaction = DecodedTransaction(
             block_metadata=block,
@@ -283,7 +283,7 @@ class ABIDecoder(IABIDecoder):
                 if len(diff.nonce_diff) > 0:
                     nonce_diffs.append(diff.nonce_diff)
                 if len(diff.storage_diff) > 0:
-                    storage_diffs.append(diff.storage_diff)
+                    storage_diffs += diff.storage_diff
             full_decoded_transaction.balance_diff = balance_diffs
             full_decoded_transaction.nonce_diff = nonce_diffs
             full_decoded_transaction.state_diff = storage_diffs 

@@ -58,8 +58,6 @@ class SemanticDecoder(ISemanticDecoder):
             transaction.balances, transaction.metadata
         )
 
-        #balance_diff, nonce_diff, state_diff = self.decode_diff(transaction.state_diff)
-
         return transaction
 
     def decode_metadata(
