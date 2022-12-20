@@ -22,7 +22,6 @@ def recursiveGenStateDiffResult(itemtype:TType, diffList: List[DestructItem], po
         dirty = {}
         original = {}
         for member in itemtype.members:
-
             print("heresolot:",slot, member.slot)
             if member.slot == slot:
                 struct_offset = member.offset
@@ -45,6 +44,7 @@ def genStateDiffResult(raw: List, diffInfo:Dict[str,str], diffList:List[Destruct
         soltype = {"name":item.label, "type": item.type.label}
         print("diff:", diffList)
 
+        key = "%s_%s"%(slot, offset)
 
         dirty,original = recursiveGenStateDiffResult(item.type, diffList,1, offset, diffInfo.dirty, diffInfo.original)
         # print("soltype:",soltype)
@@ -57,11 +57,32 @@ def genStateDiffResult(raw: List, diffInfo:Dict[str,str], diffList:List[Destruct
 
         # if not needHandle:
         #     continue
-        stateDiffResultOne = StateDiffResult(dirty=dirty, original=original, soltype=soltype, raw=raw)
+
+        stateDiffResultOne = StateDiffResult(dirty=dirty, original=original, soltype=soltype, raw=raw,showtype=item.showtype)
         if dirty == original:
             continue
-        retdata["%s_%s"%(slot, offset)] = stateDiffResultOne
+        mergeData(retdata, key, stateDiffResultOne)
     return retdata 
 
 def handleKey(key):
     return "0x"+key[2:].zfill(64)
+
+def recursiveMergedata(dirty1, dirty2):
+    if  isinstance(dirty1, dict):
+        for k,v in dirty2.items():
+            if  k not in dirty1:
+                dirty1[k] = v
+            else:
+                dirty1[k] = recursiveMergedata(dirty1[k], dirty2[k])
+        return dirty1
+    return dirty2
+
+
+
+def mergeData(retdata, key, stateDiffResultOne):
+    if key not in retdata:
+        retdata[key] = stateDiffResultOne
+        return 
+    if not isinstance(stateDiffResultOne.dirty, dict):
+        retdata[key].original = recursiveMergedata(retdata[key].original,stateDiffResultOne.original)
+        retdata[key].dirty = recursiveMergedata(retdata[key].dirty, stateDiffResultOne.dirty)

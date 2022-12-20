@@ -81,8 +81,20 @@ class  Contract():
                 storage_type = self.findType(storage_layout, item_type)
                 if slot not in storageDict:
                     storageDict[slot] = {}
+                showtype = 0
+                if  isinstance(storage_type,TType):
+                    showtype = 1
+                if isinstance(storage_type, MapType):
+                    if isinstance(storage_type.value, TType):
+                        showtype = 2
+                    if  isinstance(storage_type.value, MapType):
+                        showtype = 3
+                    if isinstance(storage_type.value, StructType):
+                        showtype = 4
+                if  isinstance(storage_type, StructType):
+                    showtype = 5
                     
-                storageDict[slot][offset] = Storage(slot=slot, offset=offset, type=storage_type, label=label)   
+                storageDict[slot][offset] = Storage(slot=slot, offset=offset, type=storage_type, label=label, showtype=showtype)   
         return storageDict
 
 

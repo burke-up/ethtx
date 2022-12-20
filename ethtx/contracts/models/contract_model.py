@@ -18,6 +18,7 @@ class Storage(BaseModel):
     offset: int
     type: TType
     label: str  #variable name
+    showtype: int
     
     def __hash__(self):
         return hash((type(self),) + tuple(self.__dict__.values()))
@@ -57,6 +58,7 @@ class StateDiffResult(BaseModel):
     raw: List[Dict]
     soltype: Optional[Dict]
     contract: Optional[Dict]
+    showtype: int = 0
 
 class DestructItem(BaseModel):
     key: str
