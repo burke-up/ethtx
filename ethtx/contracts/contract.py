@@ -11,31 +11,36 @@ from .util import *
 
 class  Contract():
     globalAddressToStorage = {}
-    def __init__(self, addr,etherscan_api_key):
+    def __init__(self, addr,etherscan_api_key="FC8R2Q3NYMBJSF9BE6C5RN64EA5GXZPEWA"):
         self.addr = addr
         self.etherscan_api_key = etherscan_api_key
         Contract.globalAddressToStorage = {} 
     def compile(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--etherscan-apikey')
+        parser.add_argument('--etherscan_api_key')
         parser.add_argument('--export-format')
         parser.add_argument('--export-dir')
         parser.add_argument('target')
 
-        argslist = ["--etherscan-apikey",self.etherscan_api_key]
+        argslist = ["--etherscan_api_key",self.etherscan_api_key]
         argslist += ["--export-format","solc"]
         argslist += ["--export-dir","bytecodes/%s"%(self.addr)]
         argslist += [self.addr]
         args = parser.parse_args(args=argslist)
 
-        # Compile all specified (possibly glob patterned) targets.
-        compilations = compile_all(**vars(args))
+        try:
+            # Compile all specified (possibly glob patterned) targets.
+            compilations = compile_all(**vars(args))
 
-        # Perform relevant tasks for each compilation
-        # print(compilations[0].compilation_units)
-        for compilation in compilations:
-            if args.export_format:
-                compilation.export(**vars(args))
+            # Perform relevant tasks for each compilation
+            # print(compilations[0].compilation_units)
+            for compilation in compilations:
+                if args.export_format:
+                    compilation.export(**vars(args))
+            return True
+        except Exception as e:
+            print("compile fail addr=%s,e=%s"%(self.addr,e))
+        return False
 
     def load_storage(self):
         #"bytecodes\\0x0c90c8b4aa8549656851964d5fb787f0e4f54082\\etherscan-contracts\\0x0c90c8b4aa8549656851964d5fb787f0e4f54082-DirectLoanCoordinator\\contracts\\loans\\direct\\DirectLoanCoordinator.sol:DirectLoanCoordinator":
@@ -43,6 +48,7 @@ class  Contract():
         if not os.path.isfile(filename):
             self.compile()
             if not os.path.isfile(filename):
+                print("compile fail addr=%s"%(self.addr))
                 return {}
         fp = open(filename,"r")
         data = fp.read()
@@ -52,7 +58,7 @@ class  Contract():
         storage_layout = None
         maxkey = None
         for k,v in solcinfo["contracts"].items():
-            alls = k.split("\\")
+            alls = k.split("/")
             if len(alls) < 4:
                 continue
             info = alls[3].split("-")
@@ -100,7 +106,7 @@ class  Contract():
             
     
     def getStorageDictByAddress(self):
-        if self.addr not in  Contract.globalAddressToStorage:
+        if self.addr in  Contract.globalAddressToStorage:
             return Contract.globalAddressToStorage[self.addr]
         storageDict: Dict[int,Dict[int,Storage]] = self.load_storage()
         Contract.globalAddressToStorage[self.addr] = storageDict
@@ -112,6 +118,7 @@ class  Contract():
         if key_int in storageDict:
             item: DestructItem = DestructItem(key="",slot=key_int)
             return [item]
+        key = handleKey(key)
         if key in shakey2value:
             value = shakey2value[key]
             prefixlist = self.decodeDiff("0x"+value[len(value)-64:], shakey2value, storageDict)
@@ -138,13 +145,15 @@ class  Contract():
             if "*" not in v:
                 continue
             diffInfo  = storage[slot]["*"]
-            raw = [{"address": self.addr,"key":slot, "original":diffInfo["from"],"dirty":diffInfo["to"]}]
+            raw = [{"address": self.addr,"key":slot, "original":diffInfo.original,"dirty":diffInfo.dirty}]
             if len(storageDict) == 0:
+                print("storageDict is null")
                 total_result.append(StateDiffResult(raw=raw))
                 continue
             diffList = self.decodeDiff(slot, shakey2value, storageDict)
             if len(diffList) == 0 or diffList[0] is None:
                 total_result.append(StateDiffResult(raw=raw))
+                print("diffList is null")
                 continue
             
             stateDiffResultOnes:Dict[str,StateDiffResult] = genStateDiffResult(raw, diffInfo, diffList,storageDict)

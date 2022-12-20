@@ -56,6 +56,7 @@ class StateDiffResult(BaseModel):
     original: Optional[str|Dict]
     raw: List[Dict]
     soltype: Optional[Dict]
+    contract: Optional[Dict]
 
 class DestructItem(BaseModel):
     key: str

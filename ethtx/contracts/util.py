@@ -58,5 +58,10 @@ def genStateDiffResult(raw: List, diffInfo:Dict[str,str], diffList:List[Destruct
         # if not needHandle:
         #     continue
         stateDiffResultOne = StateDiffResult(dirty=dirty, original=original, soltype=soltype, raw=raw)
+        if dirty == original:
+            continue
         retdata["%s_%s"%(slot, offset)] = stateDiffResultOne
     return retdata 
+
+def handleKey(key):
+    return "0x"+key[2:].zfill(64)

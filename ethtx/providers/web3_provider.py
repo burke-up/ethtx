@@ -530,6 +530,13 @@ class Web3Provider(NodeDataProvider):
     def _create_call_from_debug_trace_tx(
         self, tx_hash: str, chain_id: str, input_rpc: AttributeDict
     ) -> W3CallTree:
+        def handleShaInfo(shainfo):
+            if not shainfo:
+                return shainfo
+            newShaInfo = {}
+            for key in shainfo:
+                newShaInfo["0x"+key.zfill(64)] = shainfo[key]
+            return newShaInfo
         def prep_raw_dict(dct: [AttributeDict, Dict]):
             if not isinstance(dct, dict):
                 dct = dct.__dict__
@@ -540,7 +547,7 @@ class Web3Provider(NodeDataProvider):
             dct["pc"] = dct.pop("pc",None)
             dct["revertPc"] = dct.pop("revertPc",None)
             dct["jumps"] = dct.pop("jumps",None)
-            dct["shainfo"] = dct.pop("shainfo",None)
+            dct["shainfo"] = handleShaInfo(dct.pop("shainfo",None))
             calls = dct.pop("calls", [])
             return dct, calls
 

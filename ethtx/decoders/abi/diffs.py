@@ -54,7 +54,10 @@ class ABIDiffsDecoder(ABISubmoduleAbc):
             if not isinstance(storage, dict):
                 return []
             c = Contract(addr.address)
-            return c.decodeStorageDiff(storage, shainfo)
+            res = c.decodeStorageDiff(storage, shainfo)
+            for item in res:
+                item.contract = addr 
+            return res
 
 
         addr = AddressInfo(address=diff.addr, name=addr_name)    
