@@ -111,7 +111,7 @@ class  Contract():
             members: list[Storage] = []
             for member in oneType["members"]:
                 storage_type = self.findType(storage_layout, member["type"])
-                storage: Storage  = Storage(slot=int(member["slot"]), offset=member["offset"], type=storage_type, label=member["label"])
+                storage: Storage  = Storage(slot=int(member["slot"]), offset=member["offset"], type=storage_type, label=member["label"],showtype=0)
                 members.append(storage)
             return StructType(members=members,numberOfBytes=numberOfBytes,t_type=item_type, label=label)
         return baseType
