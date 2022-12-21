@@ -158,7 +158,7 @@ class  Contract():
                 continue
             diffInfo  = storage[slot]["*"]
             raw = [{"address": self.addr,"key":slot, "original":diffInfo.original,"dirty":diffInfo.dirty}]
-            if len(storageDict) == 0:
+            if not storageDict or len(storageDict) == 0:
                 print("storageDict is null")
                 total_result.append(StateDiffResult(raw=raw))
                 continue
