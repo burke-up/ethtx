@@ -170,12 +170,7 @@ class  Contract():
             
             stateDiffResultOnes:Dict[str,StateDiffResult] = genStateDiffResult(raw, diffInfo, diffList,storageDict)
             for key, value in stateDiffResultOnes.items():
+                mergeData(slot_offset_to_result, key,value)
                 
-                if key not in slot_offset_to_result:
-                    slot_offset_to_result[key] = value
-                else:
-                    slot_offset_to_result[key].dirty.update(value.dirty)
-                    slot_offset_to_result[key].original.update(value.original)
-                    slot_offset_to_result[key].raw += value.raw
         total_result += slot_offset_to_result.values()    
         return total_result

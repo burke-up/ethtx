@@ -4,8 +4,6 @@ def get_num_by_offset_and_len(num: int, offset: int, numberOfBytes: int):
     return hex((num >> (offset*8)) & ((1<<(numberOfBytes*8))-1))
 
 def recursiveGenStateDiffResult(itemtype:TType, diffList: List[DestructItem], pos: int, offset: int, dirty_input:str, original_input:str):  
-    print("pos=",pos)
-    print("diffList:=", diffList)      
 
     if isinstance(itemtype,MapType):
         diff = diffList[pos]
@@ -17,18 +15,15 @@ def recursiveGenStateDiffResult(itemtype:TType, diffList: List[DestructItem], po
         return tuple([dirty, original])
 
     if isinstance(itemtype, StructType):
-        print("itemtypestruct:", itemtype)
         slot = offset
         dirty = {}
         original = {}
         for member in itemtype.members:
-            print("heresolot:",slot, member.slot)
             if member.slot == slot:
                 struct_offset = member.offset
                 dirty_value,original_value = recursiveGenStateDiffResult(member.type,diffList,pos+1,struct_offset,dirty_input,original_input)
                 dirty[member.label] = dirty_value
                 original[member.label] =  original_value
-                print("here:", dirty)
         return tuple([dirty, original])
 
     dirty_num = get_num_by_offset_and_len(int(dirty_input,16), offset, itemtype.numberOfBytes)
@@ -42,7 +37,6 @@ def genStateDiffResult(raw: List, diffInfo:Dict[str,str], diffList:List[Destruct
     retdata = {}
     for offset, item in items.items():
         soltype = {"name":item.label, "type": item.type.label}
-        print("diff:", diffList)
 
         key = "%s_%s"%(slot, offset)
 
@@ -83,6 +77,5 @@ def mergeData(retdata, key, stateDiffResultOne):
     if key not in retdata:
         retdata[key] = stateDiffResultOne
         return 
-    if not isinstance(stateDiffResultOne.dirty, dict):
-        retdata[key].original = recursiveMergedata(retdata[key].original,stateDiffResultOne.original)
-        retdata[key].dirty = recursiveMergedata(retdata[key].dirty, stateDiffResultOne.dirty)
+    retdata[key].original = recursiveMergedata(retdata[key].original,stateDiffResultOne.original)
+    retdata[key].dirty = recursiveMergedata(retdata[key].dirty, stateDiffResultOne.dirty)
