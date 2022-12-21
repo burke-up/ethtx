@@ -158,8 +158,8 @@ class DecodedTransaction(BaseModel):
     input: Optional[str]
     latestBlockNum: Optional[int]
     state_diff: Optional[List]
-    nonce_diff: Optional[List]
-    balance_diff: Optional[List]
+    balance_nonce_diff: Optional[List]
+
 
 
 class Proxy(BaseModel):

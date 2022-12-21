@@ -274,19 +274,31 @@ class ABIDecoder(IABIDecoder):
                 diffs = transaction.statediff,
                 shainfo = transaction.root_call.shainfo, 
             )
-            balance_diffs = []
-            nonce_diffs = []
-            storage_diffs = []
+
+            storage_diffs = {}
+            balance_nonce_diffs = {}
             for diff in diffresults:
                 if len(diff.balance_diff) > 0:
-                    balance_diffs.append(diff.balance_diff)
+                    for balance_diff in diff.balance_diff:
+                        if balance_diff.address.address not in balance_nonce_diffs:
+                            balance_nonce_diffs[balance_diff.address.address] = {"address":balance_diff.address, "is_miner":balance_diff.is_miner}
+                        balance_nonce_diffs[balance_diff.address.address]["Balance"] = {"original":balance_diff.original,"dirty":balance_diff.dirty}
+
                 if len(diff.nonce_diff) > 0:
-                    nonce_diffs.append(diff.nonce_diff)
+                    for nonce_diff in diff.nonce_diff:
+                        if nonce_diff.address.address not in balance_nonce_diffs:
+                            balance_nonce_diffs[nonce_diff.address.address] = {"address":nonce_diff.address, "is_miner":nonce_diff.is_miner}
+                        balance_nonce_diffs[nonce_diff.address.address]["Balance"] = {"original":nonce_diff.original,"dirty":nonce_diff.dirty}
+
                 if len(diff.storage_diff) > 0:
+                    for storage_diff in diff.storage_diff:
+                        key  = storage_diff.contract.address
+                        if  key not in storage_diffs:
+                            storage_diffs[key] = {"list":[], "contract":storage_diff.contract}
+                        storage_diffs[key]["list"].append(storage_diff)
                     storage_diffs += diff.storage_diff
-            full_decoded_transaction.balance_diff = balance_diffs
-            full_decoded_transaction.nonce_diff = nonce_diffs
-            full_decoded_transaction.state_diff = storage_diffs 
+            full_decoded_transaction.balance_nonce_diff = balance_nonce_diffs.values()
+            full_decoded_transaction.state_diff = storage_diffs.values()
         except Exception as e:
             log.exception(
                 "ABI decoding of diff for %s / %s failed.",
