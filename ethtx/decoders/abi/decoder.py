@@ -279,16 +279,16 @@ class ABIDecoder(IABIDecoder):
             balance_nonce_diffs = {}
             for diff in diffresults:
                 if len(diff.balance_diff) > 0:
-                    for balance_diff in diff.balance_diff:
-                        if balance_diff.address.address not in balance_nonce_diffs:
-                            balance_nonce_diffs[balance_diff.address.address] = {"address":balance_diff.address, "is_miner":balance_diff.is_miner}
-                        balance_nonce_diffs[balance_diff.address.address]["Balance"] = {"original":balance_diff.original,"dirty":balance_diff.dirty}
+                    balance_diff = diff.balance_diff
+                    if balance_diff.address.address not in balance_nonce_diffs:
+                        balance_nonce_diffs[balance_diff.address.address] = {"address":balance_diff.address, "is_miner":balance_diff.is_miner}
+                    balance_nonce_diffs[balance_diff.address.address]["Balance"] = {"original":balance_diff.original,"dirty":balance_diff.dirty}
 
                 if len(diff.nonce_diff) > 0:
-                    for nonce_diff in diff.nonce_diff:
-                        if nonce_diff.address.address not in balance_nonce_diffs:
-                            balance_nonce_diffs[nonce_diff.address.address] = {"address":nonce_diff.address, "is_miner":nonce_diff.is_miner}
-                        balance_nonce_diffs[nonce_diff.address.address]["Balance"] = {"original":nonce_diff.original,"dirty":nonce_diff.dirty}
+                    nonce_diff = diff.nonce_diff
+                    if nonce_diff.address.address not in balance_nonce_diffs:
+                        balance_nonce_diffs[nonce_diff.address.address] = {"address":nonce_diff.address, "is_miner":nonce_diff.is_miner}
+                    balance_nonce_diffs[nonce_diff.address.address]["Balance"] = {"original":nonce_diff.original,"dirty":nonce_diff.dirty}
 
                 if len(diff.storage_diff) > 0:
                     for storage_diff in diff.storage_diff:
