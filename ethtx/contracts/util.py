@@ -3,6 +3,15 @@ from .models.contract_model import *
 def get_num_by_offset_and_len(num: int, offset: int, numberOfBytes: int):
     return hex((num >> (offset*8)) & ((1<<(numberOfBytes*8))-1))
 
+def handle_value(typename, key):
+    if typename == 'address':
+        key = "0x%s"%(hex(int(key,16))[2:].zfill(40))
+    elif typename.startswith("enum") or 'int' in typename:
+        key = int(key,16)
+    elif typename == 'bool':
+        key = bool(key)
+    return key 
+
 def recursiveGenStateDiffResult(itemtype:TType, diffList: List[DestructItem], pos: int, offset: int, dirty_input:str, original_input:str):  
 
     if isinstance(itemtype,MapType):
@@ -10,6 +19,7 @@ def recursiveGenStateDiffResult(itemtype:TType, diffList: List[DestructItem], po
         key = diff.key
         # transfer diff.slot , if next is struct, then the slot will be used
         dirty_value,original_value = recursiveGenStateDiffResult(itemtype.value,diffList, pos+1,diff.slot,dirty_input,original_input)
+        key = handle_value(itemtype.key.label, key)
         dirty = {key: dirty_value }
         original = {key: original_value }
         return tuple([dirty, original])
@@ -28,6 +38,9 @@ def recursiveGenStateDiffResult(itemtype:TType, diffList: List[DestructItem], po
 
     dirty_num = get_num_by_offset_and_len(int(dirty_input,16), offset, itemtype.numberOfBytes)
     original_num = get_num_by_offset_and_len(int(original_input,16), offset, itemtype.numberOfBytes)
+    dirty_num = handle_value(itemtype.label, dirty_num)
+    original_num = handle_value(itemtype.label, original_num)
+    
     return tuple([dirty_num, original_num])
 
 def genStateDiffResult(raw: List, diffInfo:Dict[str,str], diffList:List[DestructItem],storageDict: Dict[int,Dict[int,Storage]])->Dict[str,StateDiffResult]:
