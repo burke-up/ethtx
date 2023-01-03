@@ -217,6 +217,7 @@ class ABICallsDecoder(ABISubmoduleAbc):
             arguments=function_input,
             outputs=function_output,
             gas_used=call.gas_used,
+            gas_refund=call.gas_refund,
             error=call.error,
             status=status,
             indent=indent,

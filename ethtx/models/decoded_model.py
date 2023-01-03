@@ -121,6 +121,7 @@ class DecodedCall(BaseModel):
     arguments: List[Argument]
     outputs: List[Argument]
     gas_used: Optional[int]
+    gas_refund: Optional[int]
     error: Optional[str]
     status: bool
     indent: int
