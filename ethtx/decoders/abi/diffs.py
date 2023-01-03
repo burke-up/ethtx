@@ -48,7 +48,7 @@ class ABIDiffsDecoder(ABISubmoduleAbc):
             if not isinstance(item, dict) or '*' not in item:
                 return {}
             realdiff = item["*"]
-            return {"address":addr,"original":realdiff.original, "dirty":realdiff.dirty,"is_miner": False}
+            return {"address":addr,"original":int(realdiff.original,16), "dirty":int(realdiff.dirty,16),"is_miner": False}
 
         def handleStorage(addr, storage, shainfo):
             if not isinstance(storage, dict):
