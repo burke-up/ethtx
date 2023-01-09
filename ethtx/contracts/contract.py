@@ -10,11 +10,14 @@ from .models.contract_model import *
 from .util import *
 
 class  Contract():
+
     globalAddressToStorage = {}
+
     def __init__(self, addr,etherscan_api_key="FC8R2Q3NYMBJSF9BE6C5RN64EA5GXZPEWA"):
         self.addr = addr
         self.etherscan_api_key = etherscan_api_key
         Contract.globalAddressToStorage = {} 
+
     def compile(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('--etherscan_api_key')
@@ -60,9 +63,16 @@ class  Contract():
         if len(solcinfo["contracts"]) == 0:
             return ""
 
-        if len(solcinfo["contracts"]) == 1:
-            keysinfo = list(solcinfo["contracts"].keys())
-            return  keysinfo[0] 
+        if len(solcinfo["sourceList"]) == 1:
+            keysinfo = solcinfo["sourceList"]
+            basekey = keysinfo[0] 
+            res = basekey.split('-')
+            print("res=%s"%res)
+            if len(res) < 2:
+                return ""
+            if not res[-1].endswith(".sol"):
+                return ""
+            return "%s:%s"%(basekey, res[-1][0:-4])
        
         maxlen = 0
         storage_layout = None
@@ -89,12 +99,15 @@ class  Contract():
 
     def findStateVariables(self, node):
         if "nodes" not in node or len(node["nodes"]) == 0:
-            return 
+            return [] 
         result = []
         for item in node["nodes"]:
+            print("item=%s"%(item["nodeType"]))
             if item["nodeType"] == "VariableDeclaration":
                 name = item["name"]
                 typename = item["typeDescriptions"]["typeString"]
+                if "name" in item["typeName"]:
+                    typename = item["typeName"]["name"]
                 result.append({"name":name, "type":typename})
         return result
 
@@ -107,12 +120,13 @@ class  Contract():
         if "sources"  not in solcinfo:
             print("no sources")
             return 
-        k = self.get_key(solcinfo)
-        rpos = k.rfind(":")
+        basekey = self.get_key(solcinfo)
+        rpos = basekey.rfind(":")
         if rpos < 0:
             return 
-        k = k[0:rpos]
-        print("key=%s"%k)
+        k = basekey[0:rpos]
+        contract_name = basekey[rpos+1:]
+        print("key=%s, name=%s"%(k, contract_name))
         if k not in solcinfo["sources"]:
             print("no key")
             return 
@@ -122,7 +136,9 @@ class  Contract():
         nodes = v["nodes"]
         for node in nodes:
             if node["nodeType"] == "ContractDefinition":
-                return self.findStateVariables(node)
+                print("node=%s"%node["name"])
+                if  node["name"] == contract_name:
+                    return self.findStateVariables(node)
         return None
         
 
