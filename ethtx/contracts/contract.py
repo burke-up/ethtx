@@ -42,35 +42,103 @@ class  Contract():
             print("compile fail addr=%s,e=%s"%(self.addr,e))
         return False
 
-    def load_storage(self):
+    def load_solcinfo(self):
         #"bytecodes\\0x0c90c8b4aa8549656851964d5fb787f0e4f54082\\etherscan-contracts\\0x0c90c8b4aa8549656851964d5fb787f0e4f54082-DirectLoanCoordinator\\contracts\\loans\\direct\\DirectLoanCoordinator.sol:DirectLoanCoordinator":
         filename = "bytecodes/%s/combined_solc.json"%(self.addr)
         if not os.path.isfile(filename):
             self.compile()
             if not os.path.isfile(filename):
                 print("compile fail addr=%s"%(self.addr))
-                return {}
+                return ""
         fp = open(filename,"r")
         data = fp.read()
         fp.close()
         solcinfo = json.loads(data)
+        return solcinfo
+    
+    def get_key(self, solcinfo):
+        if len(solcinfo["contracts"]) == 0:
+            return ""
+
+        if len(solcinfo["contracts"]) == 1:
+            keysinfo = list(solcinfo["contracts"].keys())
+            return  keysinfo[0] 
+       
         maxlen = 0
         storage_layout = None
         maxkey = None
         for k,v in solcinfo["contracts"].items():
+            print("key=%s v=%s"%(k,v))
             alls = k.split("/")
-            if len(alls) < 4:
-                continue
-            info = alls[3].split("-")
+            print("alls=%s"%(alls))
+            findpos = -1 
+            for pos in range(len(alls)-1,0,-1):
+                if alls[pos] == 'etherscan-contracts':
+                    findpos = pos
+                    break
+            if findpos <= 0 :
+                return "" 
+            info = alls[findpos-1].split("-")
             if len(info) < 2:
                 continue
             addr, name = info[0:2]
+            print("key=%s name=%s endwith=%s"%(k, name, k.endswith(name)))
             if k.endswith(":%s"%(name)):
-                if "storage_layout" not in v:
-                    return 
-                print("foundKey=%s"%(k))
-                storage_layout = v["storage_layout"]
-                break
+                return k
+        return ""
+
+    def findStateVariables(self, node):
+        if "nodes" not in node or len(node["nodes"]) == 0:
+            return 
+        result = []
+        for item in node["nodes"]:
+            if item["nodeType"] == "VariableDeclaration":
+                name = item["name"]
+                typename = item["typeDescriptions"]["typeString"]
+                result.append({"name":name, "type":typename})
+        return result
+
+
+    def getStateVariables(self):
+        solcinfo = self.load_solcinfo()
+        if len(solcinfo) == 0:
+            print("noslocinfo")
+            return 
+        if "sources"  not in solcinfo:
+            print("no sources")
+            return 
+        k = self.get_key(solcinfo)
+        rpos = k.rfind(":")
+        if rpos < 0:
+            return 
+        k = k[0:rpos]
+        print("key=%s"%k)
+        if k not in solcinfo["sources"]:
+            print("no key")
+            return 
+        v = solcinfo["sources"][k]["AST"]
+        if "nodes" not in v or len(v["nodes"]) == 0:
+            return 
+        nodes = v["nodes"]
+        for node in nodes:
+            if node["nodeType"] == "ContractDefinition":
+                return self.findStateVariables(node)
+        return None
+        
+
+
+    def load_storage(self):
+        solcinfo = self.load_solcinfo()
+        if len(solcinfo) == 0:
+            return 
+        k = self.get_key(solcinfo)
+        v = solcinfo["contracts"][k]
+        if "storage_layout" not in v:
+            return 
+        storage_layout = v["storage_layout"]
+        if not storage_layout or len(storage_layout) == 0:
+            return 
+
         storageDict: Dict[int,Dict[int,Storage]]= {}
         if storage_layout and "storage" in storage_layout:
             for item in storage_layout["storage"]:
