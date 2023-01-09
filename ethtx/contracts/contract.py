@@ -111,6 +111,14 @@ class  Contract():
                 result.append({"name":name, "type":typename})
         return result
 
+    def recursiveGetStateVariables(self, contract2node, name):
+        if name  not in contract2node: 
+            return [] 
+        statevariabels = self.findStateVariables(contract2node[name])
+        for item in contract2node[name].get("baseContracts", []):
+            statevariabels += self.recursiveGetStateVariables(contract2node,item["baseName"]["name"])
+        return statevariabels
+              
 
     def getStateVariables(self):
         solcinfo = self.load_solcinfo()
@@ -133,13 +141,12 @@ class  Contract():
         v = solcinfo["sources"][k]["AST"]
         if "nodes" not in v or len(v["nodes"]) == 0:
             return 
+        contract2node = {}
         nodes = v["nodes"]
         for node in nodes:
             if node["nodeType"] == "ContractDefinition":
-                print("node=%s"%node["name"])
-                if  node["name"] == contract_name:
-                    return self.findStateVariables(node)
-        return None
+                contract2node[node["name"]] = node
+        return self.recursiveGetStateVariables(contract2node, contract_name) 
         
 
 
