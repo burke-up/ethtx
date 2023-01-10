@@ -146,9 +146,13 @@ class  Contract():
         for node in nodes:
             if node["nodeType"] == "ContractDefinition":
                 contract2node[node["name"]] = node
-        return self.recursiveGetStateVariables(contract2node, contract_name) 
-        
-
+        baseStateVariables = self.recursiveGetStateVariables(contract2node, contract_name) 
+        if not solcinfo.get("proxy", False) or len(solcinfo.get("implement","")) == 0:
+            return baseStateVariables
+        addr = solcinfo["implement"]
+        c = Contract(addr)
+        proxyStateVaraiable = c.getStateVariables() 
+        return proxyStateVaraiable + baseStateVariables
 
     def load_storage(self):
         solcinfo = self.load_solcinfo()
