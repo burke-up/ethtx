@@ -99,6 +99,8 @@ class StackTraceItem(BaseModel):
     startPos: Optional[int]
     endPos: Optional[int]
     fileno: Optional[int]
+    code_start: Optional[int]
+    code_length: Optional[int]
 
 
 class DecodedTransactionWithStackTrace(BaseModel):
@@ -128,6 +130,7 @@ class DecodedCall(BaseModel):
     subcalls: List[DecodedCall] = []
     function_guessed: bool = False
     pc: Optional[int]
+    toPc: Optional[int]
     revertPc: Optional[int]
     jumps: Optional[List[int]]
     stackTraceItem: Optional[StackTraceItem]

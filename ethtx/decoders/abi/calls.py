@@ -223,6 +223,7 @@ class ABICallsDecoder(ABISubmoduleAbc):
             indent=indent,
             function_guessed=guessed,
             pc=call.pc,
+            toPc=call.toPc,
             revertPc=call.revertPc,
             jumps=call.jumps,
         )

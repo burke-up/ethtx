@@ -180,6 +180,7 @@ class W3CallTree(BaseModel):
     error: Optional[str]
     calls: list = []
     pc: Optional[int]
+    toPc: Optional[int]
     revertPc: Optional[int]
     jumps: Optional[List[int]]
     shainfo: Optional[dict]
@@ -196,6 +197,7 @@ class W3CallTree(BaseModel):
         status = self.error is None
         error = self.error
         pc = self.pc
+        toPc = self.toPc
         revertPc = self.revertPc
         jumps = self.jumps
         shainfo = self.shainfo
@@ -212,6 +214,7 @@ class W3CallTree(BaseModel):
             status=status,
             error=error,
             pc=pc,
+            toPc=toPc,
             revertPc=revertPc,
             jumps = jumps,
             shainfo = shainfo,

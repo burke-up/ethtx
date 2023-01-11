@@ -150,6 +150,7 @@ ethtx_config = EthTxConfig(
 )
 
 txhash = "0x07b5e887131fc6d7ba126c7d433fee5b74e9e194a73270a676bbc33bb4220335"
+txhash = "0x718b0a4b0d5935584f2f0d1f2837e853ac2c9df1dd0d48eaf49900dc2ce30492"
 ethtx = EthTx.initialize(ethtx_config)
 decoded_transaction = ethtx.decoders.decode_transaction(txhash)
 calls  = decoded_transaction.calls

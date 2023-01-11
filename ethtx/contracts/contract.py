@@ -13,10 +13,13 @@ class  Contract():
 
     globalAddressToStorage = {}
 
-    def __init__(self, addr,etherscan_api_key="FC8R2Q3NYMBJSF9BE6C5RN64EA5GXZPEWA"):
+    def __init__(self, addr,etherscan_api_key="FC8R2Q3NYMBJSF9BE6C5RN64EA5GXZPEWA", prefix=""):
         self.addr = addr
         self.etherscan_api_key = etherscan_api_key
         Contract.globalAddressToStorage = {} 
+        if len(prefix) >0 and not prefix.endswith('/'):
+            prefix= "%s/"%(prefix)
+        self.prefix=prefix
 
     def compile(self):
         parser = argparse.ArgumentParser()
@@ -27,7 +30,7 @@ class  Contract():
 
         argslist = ["--etherscan_api_key",self.etherscan_api_key]
         argslist += ["--export-format","solc"]
-        argslist += ["--export-dir","bytecodes/%s"%(self.addr)]
+        argslist += ["--export-dir","%sbytecodes/%s"%(self.prefix, self.addr)]
         argslist += [self.addr]
         args = parser.parse_args(args=argslist)
 
@@ -47,7 +50,7 @@ class  Contract():
 
     def load_solcinfo(self):
         #"bytecodes\\0x0c90c8b4aa8549656851964d5fb787f0e4f54082\\etherscan-contracts\\0x0c90c8b4aa8549656851964d5fb787f0e4f54082-DirectLoanCoordinator\\contracts\\loans\\direct\\DirectLoanCoordinator.sol:DirectLoanCoordinator":
-        filename = "bytecodes/%s/combined_solc.json"%(self.addr)
+        filename = "%sbytecodes/%s/combined_solc.json"%(self.prefix,self.addr)
         if not os.path.isfile(filename):
             self.compile()
             if not os.path.isfile(filename):
@@ -78,9 +81,7 @@ class  Contract():
         storage_layout = None
         maxkey = None
         for k,v in solcinfo["contracts"].items():
-            print("key=%s v=%s"%(k,v))
             alls = k.split("/")
-            print("alls=%s"%(alls))
             findpos = -1 
             for pos in range(len(alls)-1,0,-1):
                 if alls[pos] == 'etherscan-contracts':
@@ -88,11 +89,10 @@ class  Contract():
                     break
             if findpos <= 0 :
                 return "" 
-            info = alls[findpos-1].split("-")
+            info = alls[findpos+1].split("-")
             if len(info) < 2:
                 continue
             addr, name = info[0:2]
-            print("key=%s name=%s endwith=%s"%(k, name, k.endswith(name)))
             if k.endswith(":%s"%(name)):
                 return k
         return ""
@@ -159,6 +159,8 @@ class  Contract():
         if len(solcinfo) == 0:
             return 
         k = self.get_key(solcinfo)
+        if not k or len(k) == 0:
+            return 
         v = solcinfo["contracts"][k]
         if "storage_layout" not in v:
             return 

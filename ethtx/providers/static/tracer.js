@@ -31,6 +31,8 @@
 	afterSHA: false,
 	lastKey: "",
 	shainfo : {},
+	iscall: true,
+        lastPc: 0,
 	
 
 	// step is invoked for every opcode that the VM executes.
@@ -46,6 +48,7 @@
 			var key = log.stack.peek(0).toString(16);
 			this.shainfo[key] = this.lastKey;
 		}
+
 		this.afterSHA  = false;		
 		if(op == "SHA3"){
 			var outOff = log.stack.peek(0).valueOf();
@@ -56,13 +59,14 @@
 		}
 		
 
-		if(this.callstack[0].pc == undefined){
+		if(this.iscall){
 			if(this.lastThreeOps.length>=3){
 				if(op == "JUMPDEST"){
 					length = this.lastThreeOps.length;
 					if(this.lastThreeOps[length-1] == "JUMP"
 					 || (this.lastThreeOps[length-1] == "JUMPI" && this.lastThreeOps[length-3]=="EQ")){
-						this.callstack[0].pc  =  log.getPC();
+						this.callstack[this.callstack.length-1].toPc  =  log.getPC();
+						this.iscall = false;
 					}					
 				}	
 				this.lastThreeOps.shift();
@@ -77,6 +81,7 @@
 				this.callstack[left-1].jumps.push(log.getPC());
 			}
 		}
+                this.lastPc = log.getPC();
 
 		// We only care about system opcodes, faster if we pre-check once
 		var syscall = (log.op.toNumber() & 0xf0) == 0xf0;
@@ -102,6 +107,7 @@
 				gasCost: log.getCost(),
 				value:   '0x' + log.stack.peek(0).toString(16),
 				pc:      log.getPC(),
+                                toPc: 0,
 				revertPc: 0,
 				jumps: [],
 			};
@@ -123,6 +129,7 @@
 				gasCost: log.getCost(),
 				value:   '0x' + db.getBalance(log.contract.getAddress()).toString(16),
 				pc:       log.getPC(),
+                                toPc:  0,
 				revertPc: 0,
 				jumps: [],
 			});
@@ -151,6 +158,7 @@
 				outOff:  log.stack.peek(4 + off).valueOf(),
 				outLen:  log.stack.peek(5 + off).valueOf(),
 				pc:      log.getPC(),
+				toPc: 0,
 				revertPc: 0,
 				jumps: [],
 			};
@@ -159,6 +167,7 @@
 			}
 			this.callstack.push(call);
 			this.descended = true
+            this.iscall = true;
 			return;
 		}
 		// If we've just descended into an inner call, retrieve it's true allowance. We
@@ -269,6 +278,7 @@
 			output:  toHex(ctx.output),
 			time:    ctx.time,
 			pc:      0,
+			toPc:    0,
 			revertPc: 0,
 			jumps: [],
 			shainfo: this.shainfo,
@@ -281,8 +291,9 @@
 		} else if (ctx.error !== undefined) {
 			result.error = ctx.error;
 		}
-		if(this.callstack[0].pc !== undefined){
-                   result.pc = this.callstack[0].pc;
+		if(this.callstack[0].toPc !== undefined){
+                   result.pc = this.callstack[0].toPc;
+                   result.toPc = this.callstack[0].toPc;
 		}
 		if(this.callstack[0].revertPc !== undefined){
                     result.revertPc = this.callstack[0].revertPc;
@@ -291,7 +302,7 @@
 			delete result.output;
 		}
 		if(this.callstack[0].jumps !== undefined){
-            result.jumps = this.callstack[0].jumps;
+			result.jumps = this.callstack[0].jumps;
 		}
 		
 		return this.finalize(result);
@@ -314,6 +325,7 @@
 			time:    call.time,
 			calls:   call.calls,
 			pc:      call.pc,
+			toPc:      call.toPc,
 			revertPc: call.revertPc,
 			jumps: call.jumps,
 			shainfo: call.shainfo,

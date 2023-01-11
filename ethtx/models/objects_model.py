@@ -112,6 +112,7 @@ class Call(BaseModel):
     error: Optional[str]
     subcalls: List[Call] = Field(default_factory=list)
     pc: Optional[int]
+    toPc: Optional[int]
     revertPc: Optional[int]
     jumps: Optional[List[int]]
     shainfo: Optional[Dict]
