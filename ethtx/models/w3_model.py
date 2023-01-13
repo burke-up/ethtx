@@ -184,6 +184,7 @@ class W3CallTree(BaseModel):
     revertPc: Optional[int]
     jumps: Optional[List[int]]
     shainfo: Optional[dict]
+    gas_refund: Optional[int]
 
     def to_object(self) -> Call:
         from_address = self.from_address
@@ -201,6 +202,7 @@ class W3CallTree(BaseModel):
         revertPc = self.revertPc
         jumps = self.jumps
         shainfo = self.shainfo
+        gas_refund = self.gas_refund
 
         call = Call(
             call_type=call_type,
@@ -218,6 +220,7 @@ class W3CallTree(BaseModel):
             revertPc=revertPc,
             jumps = jumps,
             shainfo = shainfo,
+            gas_refund = gas_refund,
         )
 
         for child_call in self.calls:

@@ -56,6 +56,9 @@ class SemanticMetadataDecoder(SemanticSubmoduleAbc):
             tx_value=tx_metadata.tx_value,
             gas_limit=tx_metadata.gas_limit,
             gas_used=tx_metadata.gas_used,
+            gas_refund=tx_metadata.gas_refund,
+            total_gas=tx_metadata.total_gas,
+            initial_gas=tx_metadata.initial_gas,
             success=tx_metadata.success,
             nonce=tx_metadata.nonce,
             input=tx_metadata.input

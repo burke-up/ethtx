@@ -48,6 +48,9 @@ class DecodedTransactionMetadata(BaseModel):
     tx_value: int
     gas_limit: int
     gas_used: int
+    gas_refund: int = 0
+    total_gas: Optional[int] = 0
+    initial_gas: Optional[int] = 0
     success: bool
     nonce: Optional[int]
     input: Optional[str]

@@ -51,7 +51,8 @@ class TransactionMetadata(BaseModel):
     tx_index: int
     tx_value: int
     gas_limit: int
-    gas_used: int
+    gas_used: int 
+    gas_refund: int = 0
     success: bool
 
     # for future use

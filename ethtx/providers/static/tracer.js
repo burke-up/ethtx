@@ -33,10 +33,12 @@
 	shainfo : {},
 	iscall: true,
         lastPc: 0,
+	gas_refund: 0,
 	
 
 	// step is invoked for every opcode that the VM executes.
 	step: function(log, db) {
+                this.gas_refund = log.getRefund();
 		// Capture any errors immediately
 		var error = log.getError();
 		if (error !== undefined) {
@@ -234,6 +236,7 @@
 
 	// fault is invoked when the actual execution of an opcode fails.
 	fault: function(log, db) {
+                this.gas_refund = log.getRefund();
 		// If the topmost call already reverted, don't handle the additional fault again
 		if (this.callstack[this.callstack.length - 1].error !== undefined) {
 			return;
@@ -282,6 +285,7 @@
 			revertPc: 0,
 			jumps: [],
 			shainfo: this.shainfo,
+			gas_refund: this.gas_refund,	
 		};
 		if (this.callstack[0].calls !== undefined) {
 			result.calls = this.callstack[0].calls;
@@ -329,6 +333,7 @@
 			revertPc: call.revertPc,
 			jumps: call.jumps,
 			shainfo: call.shainfo,
+			gas_refund: call.gas_refund,
 
 		}
 		for (var key in sorted) {

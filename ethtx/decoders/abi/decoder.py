@@ -55,6 +55,16 @@ def prune_delegates(call: DecodedCall) -> DecodedCall:
 
     return call
 
+def get_initial_gas(input: str):
+    zero_num = 0 
+    nonzero_num = 0  
+    for pos in range(2,len(input),2):
+        if input[pos:pos+2] == '00':
+            zero_num += 1
+        else:
+            nonzero_num += 1
+    return  21000 + zero_num*4 + nonzero_num*16
+
 
 class ABIDecoder(IABIDecoder):
     def decode_transaction(
@@ -204,10 +214,13 @@ class ABIDecoder(IABIDecoder):
             )
             raise e
 
+        gas_refund = 0
         try:
             full_decoded_transaction.calls = self.decode_calls(
                 transaction.root_call, block, transaction.metadata, proxies, chain_id
             )
+            if full_decoded_transaction.calls is not None:
+                gas_refund = full_decoded_transaction.calls.gas_refund
         except Exception as e:
             log.exception(
                 "ABI decoding of calls tree for %s / %s failed.",
@@ -215,6 +228,9 @@ class ABIDecoder(IABIDecoder):
                 chain_id,
             )
             raise e
+
+        full_decoded_transaction.metadata.gas_refund =  gas_refund  
+        full_decoded_transaction.metadata.total_gas =  full_decoded_transaction.metadata.gas_used + gas_refund  
 
         try:
             full_decoded_transaction.transfers = self.decode_transfers(
@@ -264,6 +280,7 @@ class ABIDecoder(IABIDecoder):
             )
             raise e
 
+        full_decoded_transaction.metadata.initial_gas =   get_initial_gas(full_decoded_transaction.input) 
 
         print("thechain_id1:", chain_id)
         try:

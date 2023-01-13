@@ -547,12 +547,14 @@ class Web3Provider(NodeDataProvider):
             dct["pc"] = dct.pop("pc",None)
             dct["revertPc"] = dct.pop("revertPc",None)
             dct["jumps"] = dct.pop("jumps",None)
+            dct["gas_refund"] = dct.pop("gas_refund",0)
             dct["shainfo"] = handleShaInfo(dct.pop("shainfo",None))
             calls = dct.pop("calls", [])
             return dct, calls
 
         obj = input_rpc.__dict__
         tmp_call_tree = []
+        print("data:",obj)
 
         w3input, main_parent_calls = prep_raw_dict(obj)
         main_parent = W3CallTree(tx_hash=tx_hash, chain_id=chain_id, **w3input)
