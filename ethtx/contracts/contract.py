@@ -62,7 +62,7 @@ class  Contract():
         solcinfo = json.loads(data)
         return solcinfo
     
-    def get_key(self, solcinfo):
+    def get_key(self, solcinfo, contractName = ""):
         if len(solcinfo["contracts"]) == 0:
             return ""
 
@@ -80,31 +80,39 @@ class  Contract():
         maxlen = 0
         storage_layout = None
         maxkey = None
+        if len(contractName) == 0:
+            for k,v in solcinfo["contracts"].items():
+                alls = k.split("/")
+                findpos = -1 
+                for pos in range(len(alls)-1,0,-1):
+                    if alls[pos] == 'etherscan-contracts':
+                        findpos = pos
+                        break
+                if findpos <= 0 :
+                    return "" 
+                info = alls[findpos+1].split("-")
+                if len(info) < 2:
+                    continue
+                addr, name = info[0:2]
+                if k.endswith(":%s"%(name)):
+                    return k
+            return ""
+    
         for k,v in solcinfo["contracts"].items():
-            alls = k.split("/")
-            findpos = -1 
-            for pos in range(len(alls)-1,0,-1):
-                if alls[pos] == 'etherscan-contracts':
-                    findpos = pos
-                    break
-            if findpos <= 0 :
-                return "" 
-            info = alls[findpos+1].split("-")
-            if len(info) < 2:
-                continue
-            addr, name = info[0:2]
-            if k.endswith(":%s"%(name)):
+            if k.endswith(":%s"%(contractName)):
                 return k
         return ""
+
 
     def findStateVariables(self, node):
         if "nodes" not in node or len(node["nodes"]) == 0:
             return [] 
         result = []
         for item in node["nodes"]:
-            print("item=%s"%(item["nodeType"]))
+            #print("item=%s"%(item["nodeType"]))
             if item["nodeType"] == "VariableDeclaration":
                 name = item["name"]
+                print("findName name=%s"%(name))
                 typename = item["typeDescriptions"]["typeString"]
                 if "name" in item["typeName"]:
                     typename = item["typeName"]["name"]
@@ -118,17 +126,8 @@ class  Contract():
         for item in contract2node[name].get("baseContracts", []):
             statevariabels += self.recursiveGetStateVariables(contract2node,item["baseName"]["name"])
         return statevariabels
-              
 
-    def getStateVariables(self):
-        solcinfo = self.load_solcinfo()
-        if len(solcinfo) == 0:
-            print("noslocinfo")
-            return 
-        if "sources"  not in solcinfo:
-            print("no sources")
-            return 
-        basekey = self.get_key(solcinfo)
+    def getStateVariablesByKey(self, solcinfo, basekey):
         rpos = basekey.rfind(":")
         if rpos < 0:
             return 
@@ -143,16 +142,41 @@ class  Contract():
             return 
         contract2node = {}
         nodes = v["nodes"]
+        parentStateVaraiables = []
         for node in nodes:
             if node["nodeType"] == "ContractDefinition":
                 contract2node[node["name"]] = node
+                if "baseContracts" in node and len(node["baseContracts"]) > 0:
+                    for baseContract in node["baseContracts"]:
+                        name = baseContract.get("baseName",{}).get("name","")
+                        if len(name) == 0:
+                            continue
+                        newBaseKey = self.get_key(solcinfo, name) 
+                        parentStateVaraiable = self.getStateVariablesByKey(solcinfo, newBaseKey)
+                        if parentStateVaraiable is not None and len(parentStateVaraiable) > 0:
+                            print("name=%s newkey=%s state=%s"%(name, newBaseKey, parentStateVaraiable))
+                            parentStateVaraiables += parentStateVaraiable
+                    
         baseStateVariables = self.recursiveGetStateVariables(contract2node, contract_name) 
+        baseStateVariables = parentStateVaraiables + baseStateVariables
         if not solcinfo.get("proxy", False) or len(solcinfo.get("implement","")) == 0:
             return baseStateVariables
         addr = solcinfo["implement"]
         c = Contract(addr)
         proxyStateVaraiable = c.getStateVariables() 
         return proxyStateVaraiable + baseStateVariables
+
+
+    def getStateVariables(self):
+        solcinfo = self.load_solcinfo()
+        if len(solcinfo) == 0:
+            print("noslocinfo")
+            return 
+        if "sources"  not in solcinfo:
+            print("no sources")
+            return 
+        basekey = self.get_key(solcinfo)
+        return self.getStateVariablesByKey(solcinfo, basekey)
 
     def load_storage(self):
         solcinfo = self.load_solcinfo()
