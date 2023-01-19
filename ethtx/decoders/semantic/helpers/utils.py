@@ -212,7 +212,10 @@ def _handle_decimal_representations(val: Decimal) -> str:
 
     # handle the case of small decimal numbers and scientific representation
     if val < DECIMAL_CLASS_MINIMAL_LIMIT:
-        digits, exponent = val_str.split("E")
+        res = val_str.split("E")
+        if len(res) != 2:
+            return val_str
+        digits, exponent = res 
 
         digit_part = digits.replace(".", "")
         num_zeros = abs(int(exponent)) - 1
