@@ -119,15 +119,19 @@ class  Contract():
                 result.append({"name":name, "type":typename})
         return result
 
-    def recursiveGetStateVariables(self, contract2node, name):
+    def recursiveGetStateVariables(self, contract2node, name, namelist):
         if name  not in contract2node: 
             return [] 
         statevariabels = self.findStateVariables(contract2node[name])
         for item in contract2node[name].get("baseContracts", []):
-            statevariabels += self.recursiveGetStateVariables(contract2node,item["baseName"]["name"])
+            basename = item["baseName"]["name"]
+            if basename == name or basename in namelist:
+                continue
+            namelist.append(basename)
+            statevariabels += self.recursiveGetStateVariables(contract2node,basename, namelist)
         return statevariabels
 
-    def getStateVariablesByKey(self, solcinfo, basekey):
+    def getStateVariablesByKey(self, solcinfo, basekey, basekeylist):
         rpos = basekey.rfind(":")
         if rpos < 0:
             return 
@@ -152,16 +156,22 @@ class  Contract():
                         if len(name) == 0:
                             continue
                         newBaseKey = self.get_key(solcinfo, name) 
-                        parentStateVaraiable = self.getStateVariablesByKey(solcinfo, newBaseKey)
+                        if newBaseKey in basekeylist:
+                            print("reclusive same")
+                            continue
+                        basekeylist.append(newBaseKey)
+                        parentStateVaraiable = self.getStateVariablesByKey(solcinfo, newBaseKey, basekeylist)
                         if parentStateVaraiable is not None and len(parentStateVaraiable) > 0:
                             print("name=%s newkey=%s state=%s"%(name, newBaseKey, parentStateVaraiable))
                             parentStateVaraiables += parentStateVaraiable
                     
-        baseStateVariables = self.recursiveGetStateVariables(contract2node, contract_name) 
+        baseStateVariables = self.recursiveGetStateVariables(contract2node, contract_name,[]) 
         baseStateVariables = parentStateVaraiables + baseStateVariables
         if not solcinfo.get("proxy", False) or len(solcinfo.get("implement","")) == 0:
             return baseStateVariables
         addr = solcinfo["implement"]
+        if addr == self.addr:
+            return baseStateVariables
         c = Contract(addr)
         proxyStateVaraiable = c.getStateVariables() 
         return proxyStateVaraiable + baseStateVariables
@@ -176,7 +186,7 @@ class  Contract():
             print("no sources")
             return 
         basekey = self.get_key(solcinfo)
-        return self.getStateVariablesByKey(solcinfo, basekey)
+        return self.getStateVariablesByKey(solcinfo, basekey,[])
 
     def load_storage(self):
         solcinfo = self.load_solcinfo()

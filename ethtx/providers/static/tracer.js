@@ -52,7 +52,7 @@
 		}
 
 		this.afterSHA  = false;		
-		if(op == "SHA3"){
+		if(op == "SHA3" || op == "KECCAK256"){
 			var outOff = log.stack.peek(0).valueOf();
 			var outEnd = outOff + log.stack.peek(1).valueOf();
 			var param = toHex(log.memory.slice(outOff, outEnd));
