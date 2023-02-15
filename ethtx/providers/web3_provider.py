@@ -31,6 +31,7 @@ from ..models.w3_model import W3Block, W3Transaction, W3Receipt, W3CallTree, W3L
 from ..semantics.standards import erc20
 from ..utils.cache_tools import cache
 import time
+from .trace_convertor import TraceConvertor
 
 log = logging.getLogger(__name__)
 
@@ -295,11 +296,9 @@ class Web3Provider(NodeDataProvider):
     def get_calls(self, tx_hash: str, chain_id: Optional[str] = None) -> W3CallTree:
         # tracer is a temporary fixed implementation of geth tracer
         chain = self._get_node_connection(chain_id)
-        tracer = self._get_custom_calls_tracer()
         response = chain.manager.request_blocking(
-            "debug_traceTransaction", [tx_hash, {"tracer": tracer, "timeout": "60s"}]
+            "debug_traceTransaction", [tx_hash]
         )
-
 
         return self._create_call_from_debug_trace_tx(
             tx_hash, chain_id or self.default_chain, response
@@ -551,8 +550,8 @@ class Web3Provider(NodeDataProvider):
             dct["shainfo"] = handleShaInfo(dct.pop("shainfo",None))
             calls = dct.pop("calls", [])
             return dct, calls
-
-        obj = input_rpc.__dict__
+        convertor = TraceConvertor()
+        obj = convertor.decode(input_rpc.__dict__["structLogs"])
         tmp_call_tree = []
         print("data:",obj)
 
