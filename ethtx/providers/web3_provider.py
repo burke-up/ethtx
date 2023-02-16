@@ -82,7 +82,7 @@ class NodeDataProvider:
     ) -> Transaction:
         ...
 
-    def get_calls(self, tx_hash: str, chain_id: Optional[str] = None) -> Call:
+    def get_calls(self, tx_hash: str, w3transaction: TransactionMetadata, chain_id: Optional[str] = None) -> Call:
         ...
 
     def get_code_hash(
@@ -293,7 +293,7 @@ class Web3Provider(NodeDataProvider):
 
         return receipt
 
-    def get_calls(self, tx_hash: str, chain_id: Optional[str] = None) -> W3CallTree:
+    def get_calls(self, tx_hash: str, w3transaction: TransactionMetadata, chain_id: Optional[str] = None) -> W3CallTree:
         # tracer is a temporary fixed implementation of geth tracer
         chain = self._get_node_connection(chain_id)
         response = chain.manager.request_blocking(
@@ -301,7 +301,7 @@ class Web3Provider(NodeDataProvider):
         )
 
         return self._create_call_from_debug_trace_tx(
-            tx_hash, chain_id or self.default_chain, response
+            tx_hash, chain_id or self.default_chain, response, w3transaction
         )
 
     # get the contract bytecode hash from the node
@@ -514,7 +514,7 @@ class Web3Provider(NodeDataProvider):
 
         w3transaction = self.get_transaction(tx_hash, chain_id)
         w3receipt = self.get_receipt(tx_hash, chain_id)
-        w3calltree = self.get_calls(tx_hash, chain_id)
+        w3calltree = self.get_calls(tx_hash, w3transaction, chain_id)
         w3statediff = self.get_statediff(tx_hash, chain_id)
         
 
@@ -527,7 +527,7 @@ class Web3Provider(NodeDataProvider):
 
 
     def _create_call_from_debug_trace_tx(
-        self, tx_hash: str, chain_id: str, input_rpc: AttributeDict
+        self, tx_hash: str, chain_id: str, input_rpc: AttributeDict, w3transaction: TransactionMetadata
     ) -> W3CallTree:
         def handleShaInfo(shainfo):
             if not shainfo:
@@ -550,8 +550,11 @@ class Web3Provider(NodeDataProvider):
             dct["shainfo"] = handleShaInfo(dct.pop("shainfo",None))
             calls = dct.pop("calls", [])
             return dct, calls
-        convertor = TraceConvertor()
-        obj = convertor.decode(input_rpc.__dict__["structLogs"])
+        convertor = TraceConvertor(w3transaction.from_address,  w3transaction.to)
+        fp = open("myresult.txt","w")
+        fp.write("%s"%(input_rpc.__dict__))
+        fp.close()
+        obj = convertor.decode(input_rpc.__dict__, w3transaction)
         tmp_call_tree = []
         print("data:",obj)
 
@@ -579,6 +582,9 @@ class Web3Provider(NodeDataProvider):
                 if child_calls is not None:
                     for child_call in child_calls:
                         w3input, child_child_call = prep_raw_dict(child_call)
+                        fp = open("input.txt","w")
+                        fp.write("%s\n"%(w3input))
+                        fp.close()
                         child = W3CallTree(
                             tx_hash=tx_hash, chain_id=chain_id, **w3input
                         )
@@ -588,7 +594,6 @@ class Web3Provider(NodeDataProvider):
                             new_call_tree.append(
                                 {"parent": child, "children": child_child_call}
                             )
-
             tmp_call_tree = new_call_tree
 
         return main_parent

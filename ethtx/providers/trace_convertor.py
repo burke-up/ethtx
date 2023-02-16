@@ -1,18 +1,9 @@
 import json
 import sys
 
-fp = open("data.txt","r")
-data = fp.read()
-fp.close()
-
-info = json.loads(data)
-structLogs = info["result"]["structLogs"]
-
-
-
 class TraceConvertor():
-    def __init__(self):
-        self.callstack = [{}]
+    def __init__(self, from_address, to_address):
+        self.callstack = [{"from":from_address,"to":to_address, "type":"CALL"}]
         self.shainfo = {}
         self.descended = False
         self.lastThreeOps = []
@@ -20,9 +11,9 @@ class TraceConvertor():
         self.lastKey = ""
         self.iscall = True
         self.lastPc = 0
-        self.returnData = ""
-        self.precompiledContracts = []
+        self.returnData = None
         self.gas_refund = 0
+        
     
     def getStackPeek(self, stack, pos):
         return stack[len(stack)-1-pos]
@@ -33,15 +24,17 @@ class TraceConvertor():
     def handleSHA(self, item):
         stack = item["stack"]
         if self.afterSHA:
-            key = stack[len(stack)-1]
+            key = stack[len(stack)-1][2:]
             self.shainfo[key] = self.lastKey
             self.afterSHA = False
         op = item["op"]
         if op == "SHA3" or op == "KECCAK256":
             outOff = int(self.getStackPeek(stack,0),16)
-            outEnd = int(self.getStackPeek(stack,1),16)
+            outEnd = outOff + int(self.getStackPeek(stack,1),16)
             param = "".join(item["memory"])[outOff*2:outEnd*2]
-            self.lastKey = param
+            if len(param) == 0:
+                print("empty: %s %s %s"%(outOff, outEnd, item["memory"]))
+            self.lastKey = "0x%s"%param
             self.afterSHA = True
 
 
@@ -70,8 +63,8 @@ class TraceConvertor():
             return 
         stack = item["stack"]
         outOff = int(self.getStackPeek(stack,0),16)
-        outEnd = int(self.getStackPeek(stack, 1),16)
-        self.returnData = "".join(item["memory"])[outOff*2:outEnd*2] 
+        outEnd = outOff + int(self.getStackPeek(stack, 1),16)
+        self.returnData = "0x%s"%("".join(item["memory"])[outOff*2:outEnd*2])
 
     def handleContractCreate(self, item):
         op = item["op"]
@@ -79,7 +72,7 @@ class TraceConvertor():
             return False
         inOff = int(self.getStackPeek(stack, 1),16)
         inEnd = inOff + int(self.getStackPeek(stack, 2),16)
-        input = "".join(item["memory"])[inOff*2:inEnd*2] 
+        input = "0x%s"%("".join(item["memory"])[inOff*2:inEnd*2])
 
         stack = item["stack"]
         call = {
@@ -88,7 +81,7 @@ class TraceConvertor():
             "input":input,
             "gasIn": item["gas"],
             "gasCost": item["gasCost"],
-            "value": int(self.getStackPeek(stack, 0),16),
+            "value": self.getStackPeek(stack, 0),
             "pc": item["pc"],
             "toPc": 0,
             "revertPc": 0,
@@ -128,37 +121,22 @@ class TraceConvertor():
         if op != 'CALL' and op != 'CALLCODE' and  op != 'DELEGATECALL' and  op != 'STATICCALL':
             return False
         stack = item["stack"]
-        to = stack[len(stack)-1]
-        if to in self.precompiledContracts:
+        to = self.getStackPeek(stack, 1)
+        if len(to) == 3 and 1<=int(to,16) <= 9:
             return True
         off = 1
-        if op == "DELEGATECALL" or op == "STATICCALL":
+        if op == "DELEGATECALL" or op == "STATICCALL": 
             off = 0
         
         inOff = int(self.getStackPeek(stack, 2+off),16)
         inEnd = inOff + int(self.getStackPeek(stack, 3+off),16)
 
-
-			# var call = {
-			# 	type:    op,
-			# 	from:    toHex(log.contract.getAddress()),
-			# 	to:      toHex(to),
-			# 	input:   toHex(log.memory.slice(inOff, inEnd)),
-			# 	gasIn:   log.getGas(),
-			# 	gasCost: log.getCost(),
-			# 	outOff:  log.stack.peek(4 + off).valueOf(),
-			# 	outLen:  log.stack.peek(5 + off).valueOf(),
-			# 	pc:      log.getPC(),
-			# 	toPc: 0,
-			# 	revertPc: 0,
-			# 	jumps: [],
-			# };
-
-        input = "".join(item["memory"])[inOff*2:inEnd*2] 
+        input = "0x%s"%("".join(item["memory"])[inOff*2:inEnd*2]) 
 
         call = {
             "type": op,
-            "from": "",
+            "from": self.callstack[len(self.callstack)-1].get("to","111"),
+            "to": "0x%s"%(to[2:].zfill(40)),
             "input":input,
             "gasIn": item["gas"],
             "gasCost": item["gasCost"],
@@ -170,7 +148,7 @@ class TraceConvertor():
             "jumps":[]
         }
         if op != "DELEGATECALL" and op != "STATICCALL":
-            call["value"] = int(self.getStackPeek(stack, 2), 16)
+            call["value"] = self.getStackPeek(stack, 2)
         self.callstack.append(call)
         self.descended = True
         self.iscall = True
@@ -225,10 +203,34 @@ class TraceConvertor():
         left = len(self.callstack)
         if "calls" not in self.callstack[left-1]:
             self.callstack[left-1]["calls"] = []
+        # call["from"] =  self.callstack[left-1].get("to","not")
         self.callstack[left-1]["calls"].append(call)
         self.returnData = None
 
-    def decode(self, structLogs):
+    def delempty(self, result):
+        fullkeys = list(result.keys())
+        for key in fullkeys: 
+            if  result[key] is None:
+                del result[key]
+
+        if "calls" in result and len(result["calls"]) > 0:
+            for call in  result["calls"]:
+                self.delempty(call)
+
+    def addFrom(self, call, curaddress):
+        if call["type"] != "DELEGATECALL":
+            curaddress = call["to"]
+        for subcall in call.get("calls",[]):
+            # print("call=%s subcall:%s"%(call, subcall))            
+            subcall["from"] = curaddress
+            self.addFrom(subcall, curaddress)
+    
+    def addFromTotal(self):
+        self.addFrom(self.callstack[0], self.callstack[0]["from"])
+
+
+    def decode(self, tracedata, w3transaction):
+        structLogs = tracedata.get("structLogs",[])
         for item in structLogs:
             self.handleSHA(item)
             self.handleJUMP(item)
@@ -245,15 +247,17 @@ class TraceConvertor():
                 continue
 
             self.handleContractChange(item)
+        self.addFromTotal()
+
         result = {
             "type": "CALL",
-            "from": "",
-            "to": "",
-            "value": "",
-            "gas": 0,
-            "gasUsed": 0,
-            "input": "",
-            "output":"",
+            "from": w3transaction.from_address,
+            "to": w3transaction.to,
+            "value": w3transaction.value,
+            "gas": tracedata["gas"],
+            "gasUsed": w3transaction.gas ,
+            "input": w3transaction.input,
+            "output": tracedata["returnValue"],
             "time": "",
             "pc": 0,
             "toPc": 0,
@@ -279,9 +283,5 @@ class TraceConvertor():
             del result["output"]
         if "jumps" in self.callstack[0]:
             result["jumps"] = self.callstack[0]["jumps"]
+        self.delempty(result)
         return result        
-
-    
-
-
-
