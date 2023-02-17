@@ -248,6 +248,14 @@ class TraceConvertor():
 
             self.handleContractChange(item)
         self.addFromTotal()
+        gasUsed = 0
+        if  len(structLogs) > 0:
+            gasUsed = structLogs[0]["gas"] - (structLogs[len(structLogs)-1]["gas"] - structLogs[len(structLogs)-1]["gasCost"])
+            self.gas_refund = w3transaction.gas - tracedata["gas"] - (structLogs[len(structLogs)-1]["gas"] - structLogs[len(structLogs)-1]["gasCost"])
+           
+        else:
+            self.gas_refund = tracedata["gas"] - tracedata["gas"] 
+       
 
         result = {
             "type": "CALL",
@@ -255,7 +263,7 @@ class TraceConvertor():
             "to": w3transaction.to,
             "value": w3transaction.value,
             "gas": tracedata["gas"],
-            "gasUsed": w3transaction.gas ,
+            "gasUsed": gasUsed, 
             "input": w3transaction.input,
             "output": tracedata["returnValue"],
             "time": "",
@@ -284,4 +292,5 @@ class TraceConvertor():
         if "jumps" in self.callstack[0]:
             result["jumps"] = self.callstack[0]["jumps"]
         self.delempty(result)
+        print("resultdata:%s"%(result["gasUsed"]))
         return result        

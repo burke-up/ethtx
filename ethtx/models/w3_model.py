@@ -193,8 +193,18 @@ class W3CallTree(BaseModel):
         call_type = self.type.lower()
         call_data = self.input
         return_value = self.output
-        gas_used = int(self.gasUsed, 16) if self.gasUsed else None
-        call_gas = int(self.gas, 16) if self.gas else None
+        gas_used = None
+        call_gas = None
+        if self.gasUsed :
+            if self.gasUsed.startswith("0x"):
+                gas_used = int(self.gasUsed, 16)
+            else:
+                gas_used = self.gasUsed 
+        if self.gas:
+            if self.gas.startswith("0x"):
+                call_gas = int(self.gas, 16)
+            else:
+                call_gas = self.gas
         status = self.error is None
         error = self.error
         pc = self.pc
